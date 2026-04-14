@@ -251,6 +251,73 @@
       .sidebar { display: none; }
       .main { margin-left: 0; padding: 20px; }
     }
+
+    /* Onboarding modal */
+    .onboard-overlay {
+      display: none;
+      position: fixed; inset: 0;
+      background: rgba(0,0,0,0.85);
+      z-index: 300;
+      align-items: center;
+      justify-content: center;
+      padding: 20px;
+    }
+    .onboard-overlay.open { display: flex; }
+    .onboard-card {
+      background: #12121e;
+      border: 1px solid rgba(124,106,247,0.25);
+      border-radius: 20px;
+      width: 100%;
+      max-width: 580px;
+      overflow: hidden;
+    }
+    .onboard-progress { height: 3px; background: rgba(255,255,255,0.08); }
+    .onboard-progress-bar { height: 100%; background: #7c6af7; transition: width 0.4s; }
+    .onboard-header { padding: 24px 28px 0; display: flex; justify-content: space-between; align-items: center; }
+    .onboard-step-label { font-size: 12px; color: rgba(255,255,255,0.35); font-weight: 600; letter-spacing: 0.08em; text-transform: uppercase; }
+    .onboard-body { padding: 20px 28px 28px; }
+    .onboard-body h3 { font-size: 22px; font-weight: 800; margin-bottom: 8px; }
+    .onboard-body p { font-size: 14px; color: rgba(255,255,255,0.5); margin-bottom: 20px; line-height: 1.6; }
+    .onboard-textarea {
+      width: 100%; min-height: 110px;
+      background: rgba(255,255,255,0.06);
+      border: 1px solid rgba(255,255,255,0.12);
+      border-radius: 12px; padding: 14px;
+      color: white; font-size: 14px; font-family: inherit;
+      resize: vertical; outline: none; line-height: 1.6;
+    }
+    .onboard-textarea:focus { border-color: #7c6af7; }
+    .onboard-btn-primary {
+      display: block; width: 100%; padding: 14px;
+      background: #7c6af7; color: white; font-weight: 800;
+      font-size: 15px; border: none; border-radius: 12px;
+      cursor: pointer; margin-top: 20px; transition: opacity 0.2s;
+    }
+    .onboard-btn-primary:hover { opacity: 0.85; }
+    .onboard-btn-back {
+      display: block; width: 100%; padding: 8px;
+      background: none; border: none; color: rgba(255,255,255,0.3);
+      cursor: pointer; font-size: 13px; margin-top: 6px;
+    }
+    .onboard-persona-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; max-height: 340px; overflow-y: auto; }
+    .onboard-persona-opt {
+      border: 2px solid rgba(255,255,255,0.08);
+      border-radius: 10px; padding: 12px 14px;
+      cursor: pointer; transition: all 0.15s;
+    }
+    .onboard-persona-opt:hover { border-color: rgba(124,106,247,0.5); }
+    .onboard-persona-opt.selected { border-color: #7c6af7; background: rgba(124,106,247,0.12); }
+    .onboard-persona-name { font-size: 13px; font-weight: 700; margin-bottom: 2px; }
+    .onboard-persona-desc { font-size: 11px; color: rgba(255,255,255,0.4); }
+    .time-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; }
+    .time-card {
+      padding: 14px 8px; border: 2px solid rgba(255,255,255,0.1);
+      border-radius: 12px; text-align: center; cursor: pointer; transition: all 0.15s;
+    }
+    .time-card:hover { border-color: rgba(124,106,247,0.5); }
+    .time-card.selected { border-color: #7c6af7; background: rgba(124,106,247,0.12); }
+    .time-card-hour { font-size: 16px; font-weight: 700; }
+    .time-card-label { font-size: 11px; color: rgba(255,255,255,0.4); margin-top: 2px; }
   </style>
 </head>
 <body>
@@ -336,6 +403,26 @@
           <div class="persona-opt-name">The Economist</div>
           <div class="persona-opt-desc">Dry wit, global lens, precise</div>
         </div>
+        <div class="persona-opt" data-persona="hormozi">
+          <div class="persona-opt-name">Alex Hormozi</div>
+          <div class="persona-opt-desc">No-BS business, profit-obsessed</div>
+        </div>
+        <div class="persona-opt" data-persona="godin">
+          <div class="persona-opt-name">Seth Godin</div>
+          <div class="persona-opt-desc">Marketing philosophy, short and punchy</div>
+        </div>
+        <div class="persona-opt" data-persona="marks">
+          <div class="persona-opt-name">Howard Marks</div>
+          <div class="persona-opt-desc">Investor memo, deep and contrarian</div>
+        </div>
+        <div class="persona-opt" data-persona="ferriss">
+          <div class="persona-opt-name">Tim Ferriss</div>
+          <div class="persona-opt-desc">Practical, optimization-obsessed</div>
+        </div>
+        <div class="persona-opt" data-persona="swisher">
+          <div class="persona-opt-name">Kara Swisher</div>
+          <div class="persona-opt-desc">Tech critic, accountability-first</div>
+        </div>
         <div class="persona-opt" data-persona="custom">
           <div class="persona-opt-name">Custom</div>
           <div class="persona-opt-desc">Write your own prompt</div>
@@ -411,24 +498,12 @@
     <p class="section-sub">When should your brief land in your inbox?</p>
 
     <div class="card">
-      <label>Send Hour (UTC)</label>
-      <select id="sendHour">
-        <option value="5">5:00 UTC (midnight CT)</option>
-        <option value="6">6:00 UTC (1am CT)</option>
-        <option value="7">7:00 UTC (2am CT)</option>
-        <option value="8">8:00 UTC (3am CT)</option>
-        <option value="9">9:00 UTC (4am CT)</option>
-        <option value="10">10:00 UTC (5am CT)</option>
-        <option value="11">11:00 UTC (6am CT)</option>
-        <option value="12" selected>12:00 UTC (7am CT)</option>
-        <option value="13">13:00 UTC (8am CT)</option>
-        <option value="14">14:00 UTC (9am CT)</option>
-        <option value="15">15:00 UTC (10am CT)</option>
-        <option value="16">16:00 UTC (11am CT)</option>
-      </select>
-      <p style="font-size:12px;color:rgba(255,255,255,0.3);margin-top:6px;">Times shown in UTC. The web server uses UTC for scheduling.</p>
+      <div class="card-title">Send Time</div>
+      <p style="font-size:12px;color:#a89af9;margin-bottom:16px;" id="tzDisplay">Detecting your timezone...</p>
+      <div class="time-grid" id="scheduleTimeGrid"></div>
+      <input type="hidden" id="sendHour" value="13">
 
-      <div class="toggle-row" style="margin-top:20px;">
+      <div class="toggle-row" style="margin-top:24px;">
         <label class="toggle">
           <input type="checkbox" id="activeToggle" checked>
           <span class="slider"></span>
@@ -455,6 +530,44 @@
 
 </main>
 
+<!-- Onboarding Modal -->
+<div class="onboard-overlay" id="onboardModal">
+  <div class="onboard-card">
+    <div class="onboard-progress"><div class="onboard-progress-bar" id="onboardProgressBar" style="width:33%"></div></div>
+    <div class="onboard-header">
+      <div class="onboard-step-label" id="onboardStepLabel">Step 1 of 3</div>
+      <div style="font-size:16px;font-weight:900;color:#7c6af7;letter-spacing:0.12em;">BRIEFSTACK</div>
+    </div>
+
+    <!-- Step 1: Context -->
+    <div class="onboard-body" id="onboard-step-1">
+      <h3>Tell me about you</h3>
+      <p>Every brief ends with a "So What for You" section. The more specific this is, the more useful it'll be.</p>
+      <textarea class="onboard-textarea" id="onboardContext" placeholder="I'm a BD Lead at a VR training startup in Houston working on enterprise SaaS deals. I'm doing an MBA and want to connect what I study to real deals I'm working on..."></textarea>
+      <button class="onboard-btn-primary" onclick="onboardNext(2)">Continue →</button>
+    </div>
+
+    <!-- Step 2: Persona -->
+    <div class="onboard-body" id="onboard-step-2" style="display:none;">
+      <h3>Pick your voice</h3>
+      <p>Who should write your briefs? You can change this anytime.</p>
+      <div class="onboard-persona-grid" id="onboardPersonaGrid"></div>
+      <button class="onboard-btn-primary" onclick="onboardNext(3)">Continue →</button>
+      <button class="onboard-btn-back" onclick="onboardBack(1)">← Back</button>
+    </div>
+
+    <!-- Step 3: Schedule -->
+    <div class="onboard-body" id="onboard-step-3" style="display:none;">
+      <h3>When should it arrive?</h3>
+      <p>Pick a morning time. Your brief will land every day at this time.</p>
+      <p style="font-size:12px;color:#a89af9;margin:-12px 0 16px;" id="onboardTzLabel">Detecting timezone...</p>
+      <div class="time-grid" id="onboardTimeGrid"></div>
+      <button class="onboard-btn-primary" id="onboardFinalBtn" onclick="completeOnboarding()">Send My First Brief Now →</button>
+      <button class="onboard-btn-back" onclick="onboardBack(2)">← Back</button>
+    </div>
+  </div>
+</div>
+
 <!-- Preview Modal -->
 <div class="modal-overlay" id="previewModal">
   <div class="modal">
@@ -474,12 +587,130 @@ let appData = null;
 let currentPersona = 'galloway';
 let currentSource = 'files';
 
+// All available personas (must match engine.js)
+const PERSONA_LIST = [
+  { key: 'galloway', name: 'Scott Galloway', desc: 'Brutal, data-driven, provocative' },
+  { key: 'graham', name: 'Paul Graham', desc: 'Contrarian, first-principles, startup' },
+  { key: 'mckinsey', name: 'McKinsey', desc: 'Structured, frameworks, sharp' },
+  { key: 'naval', name: 'Naval Ravikant', desc: 'Philosophical, wealth and leverage' },
+  { key: 'economist', name: 'The Economist', desc: 'Dry wit, global lens, precise' },
+  { key: 'hormozi', name: 'Alex Hormozi', desc: 'No-BS business, profit-obsessed' },
+  { key: 'godin', name: 'Seth Godin', desc: 'Marketing philosophy, punchy' },
+  { key: 'marks', name: 'Howard Marks', desc: 'Investor memo, deep, contrarian' },
+  { key: 'ferriss', name: 'Tim Ferriss', desc: 'Practical, optimization-focused' },
+  { key: 'swisher', name: 'Kara Swisher', desc: 'Tech critic, accountability-first' },
+  { key: 'custom', name: 'Custom', desc: 'Write your own prompt' },
+];
+
+// --- Onboarding ---
+let onboardPersona = 'galloway';
+let onboardHour = 13; // UTC default (8am CT)
+
+function showOnboardingModal() {
+  document.getElementById('onboardModal').classList.add('open');
+  buildOnboardPersonaGrid();
+  buildOnboardTimeGrid('onboardTimeGrid', 'onboardTzLabel', true);
+}
+
+function buildOnboardPersonaGrid() {
+  const grid = document.getElementById('onboardPersonaGrid');
+  grid.innerHTML = PERSONA_LIST.filter(p => p.key !== 'custom').map(p => `
+    <div class="onboard-persona-opt${p.key === onboardPersona ? ' selected' : ''}" data-key="${p.key}" onclick="selectOnboardPersona(this, '${p.key}')">
+      <div class="onboard-persona-name">${p.name}</div>
+      <div class="onboard-persona-desc">${p.desc}</div>
+    </div>
+  `).join('');
+}
+
+function selectOnboardPersona(el, key) {
+  document.querySelectorAll('#onboardPersonaGrid .onboard-persona-opt').forEach(e => e.classList.remove('selected'));
+  el.classList.add('selected');
+  onboardPersona = key;
+}
+
+function buildOnboardTimeGrid(gridId, labelId, setDefault) {
+  const tz = Intl.DateTimeFormat().resolvedOptions().timeZone;
+  const labelEl = document.getElementById(labelId);
+  if (labelEl) labelEl.textContent = `Timezone: ${tz}`;
+
+  const morningHours = [6, 7, 8, 9, 10, 11]; // local hours
+  const grid = document.getElementById(gridId);
+
+  grid.innerHTML = morningHours.map(localH => {
+    const d = new Date();
+    d.setHours(localH, 0, 0, 0);
+    const utcH = d.getUTCHours();
+    const label = localH >= 12 ? `${localH === 12 ? 12 : localH - 12}:00 PM` : `${localH}:00 AM`;
+    return `<div class="time-card" data-utc="${utcH}" onclick="selectTime(this, ${utcH}, '${gridId}')">
+      <div class="time-card-hour">${label}</div>
+      <div class="time-card-label">your time</div>
+    </div>`;
+  }).join('');
+
+  if (setDefault) {
+    // Default to 8am local
+    const cards = grid.querySelectorAll('.time-card');
+    if (cards[2]) cards[2].click(); // 8am = index 2
+  }
+}
+
+function selectTime(el, utcH, gridId) {
+  document.querySelectorAll(`#${gridId} .time-card`).forEach(e => e.classList.remove('selected'));
+  el.classList.add('selected');
+  if (gridId === 'onboardTimeGrid') onboardHour = utcH;
+  else document.getElementById('sendHour').value = utcH;
+}
+
+function onboardNext(step) {
+  document.getElementById(`onboard-step-${step - 1}`).style.display = 'none';
+  document.getElementById(`onboard-step-${step}`).style.display = 'block';
+  document.getElementById('onboardStepLabel').textContent = `Step ${step} of 3`;
+  document.getElementById('onboardProgressBar').style.width = `${Math.round(step / 3 * 100)}%`;
+}
+
+function onboardBack(step) {
+  document.getElementById(`onboard-step-${step + 1}`).style.display = 'none';
+  document.getElementById(`onboard-step-${step}`).style.display = 'block';
+  document.getElementById('onboardStepLabel').textContent = `Step ${step} of 3`;
+  document.getElementById('onboardProgressBar').style.width = `${Math.round(step / 3 * 100)}%`;
+}
+
+async function completeOnboarding() {
+  const btn = document.getElementById('onboardFinalBtn');
+  btn.textContent = 'Sending your first brief...';
+  btn.disabled = true;
+
+  const tz = Intl.DateTimeFormat().resolvedOptions().timeZone;
+  try {
+    const res = await fetch('/api/onboard', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        context_text: document.getElementById('onboardContext').value,
+        persona: onboardPersona,
+        send_hour: onboardHour,
+        timezone: tz,
+      }),
+    });
+    const data = await res.json();
+    if (!data.ok) throw new Error(data.error);
+    document.getElementById('onboardModal').classList.remove('open');
+    toast('Your first brief is generating and will arrive shortly!');
+    loadData();
+  } catch (e) {
+    btn.textContent = 'Send My First Brief Now →';
+    btn.disabled = false;
+    toast('Something went wrong: ' + e.message);
+  }
+}
+
 // Load data
 async function loadData() {
   const res = await fetch('/api/me');
   if (res.status === 401 || res.status === 302) { window.location = '/'; return; }
   appData = await res.json();
   render();
+  if (appData.user.onboarded === 0) showOnboardingModal();
 }
 
 function render() {
@@ -510,8 +741,16 @@ function render() {
   // Topics
   renderTopicList(customTopics);
 
-  // Schedule
-  document.getElementById('sendHour').value = settings.send_hour || 12;
+  // Schedule - build timezone-aware grid
+  buildOnboardTimeGrid('scheduleTimeGrid', 'tzDisplay', false);
+  const savedHour = settings.send_hour || 13;
+  document.getElementById('sendHour').value = savedHour;
+  // Select the matching card
+  setTimeout(() => {
+    const card = document.querySelector(`#scheduleTimeGrid .time-card[data-utc="${savedHour}"]`);
+    if (card) { card.classList.add('selected'); }
+    else { const first = document.querySelector('#scheduleTimeGrid .time-card'); if (first) first.classList.add('selected'); }
+  }, 50);
   document.getElementById('activeToggle').checked = !!settings.active;
   document.getElementById('activeLabel').textContent = settings.active ? 'Emails active' : 'Emails paused';
 
@@ -642,7 +881,8 @@ async function deleteTopic(id) {
 // Schedule
 async function saveSchedule() {
   const body = {
-    send_hour: document.getElementById('sendHour').value,
+    send_hour: parseInt(document.getElementById('sendHour').value) || 13,
+    timezone: Intl.DateTimeFormat().resolvedOptions().timeZone,
     active: document.getElementById('activeToggle').checked ? 1 : 0,
   };
   await fetch('/api/settings', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) });

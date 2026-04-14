@@ -20,12 +20,18 @@ function getDb() {
 }
 
 function migrate(db) {
+  // Migrate existing DB: add new columns if they don't exist yet
+  try { db.exec(`ALTER TABLE users ADD COLUMN onboarded INTEGER DEFAULT 0`) } catch(e) {}
+  try { db.exec(`ALTER TABLE users ADD COLUMN trial_ends TEXT`) } catch(e) {}
+
   db.exec(`
     CREATE TABLE IF NOT EXISTS users (
       id INTEGER PRIMARY KEY AUTOINCREMENT,
       email TEXT UNIQUE NOT NULL,
       created_at TEXT DEFAULT (datetime('now')),
-      last_login TEXT
+      last_login TEXT,
+      onboarded INTEGER DEFAULT 0,
+      trial_ends TEXT
     );
 
     CREATE TABLE IF NOT EXISTS magic_links (
@@ -108,6 +114,14 @@ function getUserById(id) {
 
 function updateLastLogin(userId) {
   getDb().prepare("UPDATE users SET last_login = datetime('now') WHERE id = ?").run(userId);
+}
+
+function setOnboarded(userId) {
+  getDb().prepare('UPDATE users SET onboarded = 1 WHERE id = ?').run(userId);
+}
+
+function setTrialEnds(userId, isoDate) {
+  getDb().prepare('UPDATE users SET trial_ends = ? WHERE id = ?').run(isoDate, userId);
 }
 
 // --- Magic link helpers ---
@@ -218,7 +232,7 @@ function getActiveUsersForHour(utcHour) {
 
 module.exports = {
   getDb,
-  findOrCreateUser, getUserByEmail, getUserById, updateLastLogin,
+  findOrCreateUser, getUserByEmail, getUserById, updateLastLogin, setOnboarded, setTrialEnds,
   createMagicLink, getMagicLink, consumeMagicLink,
   getSettings, saveSettings, incrementTopicIndex,
   saveUpload, getUploads, getUploadText, deleteUpload,

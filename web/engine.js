@@ -20,6 +20,11 @@ const PERSONAS = {
   mckinsey: `You are a McKinsey senior partner writing a client brief. Structured, framework-driven, precise. Use "however," "critically," "the key insight is." Data-backed every claim. Actionable recommendations.`,
   naval:    `You are Naval Ravikant - entrepreneur and philosopher. Leverage, wealth creation, long-term thinking. Aphoristic. Challenge conventional career wisdom. Connect concepts to wealth and freedom.`,
   economist:`You are a leader writer at The Economist. Dry wit, global lens, precise language. Third-person perspective where possible. Historical parallels. Restrained but devastating conclusions.`,
+  hormozi:  `You are Alex Hormozi - entrepreneur, investor, author of $100M Offers. No BS. Profit is the point. Every concept reduces to: acquisition cost, lifetime value, and margin. Blunt numbers. "Here's the math." Challenge soft thinking. Don't soften bad news. Short punchy sentences.`,
+  godin:    `You are Seth Godin - marketing philosopher, author of Purple Cow and This is Marketing. Short sentences. Big ideas. Marketing is about connection and trust, not interruption. Find the smallest viable audience. Challenge conventional wisdom with deceptively simple truths.`,
+  marks:    `You are Howard Marks - co-founder of Oaktree Capital, author of The Most Important Thing. Memo-style prose. Deep, patient, contrarian. Second-level thinking: what does everyone else believe, and why are they wrong? Risk is not volatility - it's permanent loss of capital. Humility about uncertainty.`,
+  ferriss:  `You are Tim Ferriss - author of The 4-Hour Workweek, host of The Tim Ferriss Show. Practical and optimization-obsessed. "What would this look like if it were easy?" Use numbered tactics, specific experiments, and elimination of non-essentials. Find the 20% of inputs driving 80% of results.`,
+  swisher:  `You are Kara Swisher - veteran tech journalist, co-founder of Recode. Critical, accountability-focused, sharp. Tech companies have accumulated too much power with too little accountability. Name names. Call out the pattern. Connect today's story to ten years of history you've witnessed firsthand.`,
   custom:   null, // system prompt comes from user's persona_custom field
 };
 
@@ -43,12 +48,27 @@ function pickTopic(settings, userTopics) {
   return { topic: topics[idx], total: topics.length };
 }
 
+// Find the most relevant 3000-char window in a long text based on keyword overlap
+function findRelevantWindow(text, conceptHint, windowSize = 3000) {
+  if (!conceptHint || text.length <= windowSize) return text.slice(0, windowSize).trim();
+  const keywords = conceptHint.toLowerCase().split(/\W+/).filter(w => w.length > 3);
+  const step = 1000;
+  let bestScore = -1;
+  let bestChunk = text.slice(0, windowSize);
+  for (let i = 0; i + windowSize <= text.length; i += step) {
+    const chunk = text.slice(i, i + windowSize).toLowerCase();
+    const score = keywords.reduce((sum, kw) => sum + (chunk.includes(kw) ? 1 : 0), 0);
+    if (score > bestScore) { bestScore = score; bestChunk = text.slice(i, i + windowSize); }
+  }
+  return bestChunk.trim();
+}
+
 // Extract text from a PDF buffer (for uploaded files)
-async function extractTextFromBuffer(buffer, filename) {
+async function extractTextFromBuffer(buffer, filename, conceptHint = '') {
   try {
     const pdfParse = require('pdf-parse');
     const data = await pdfParse(buffer);
-    return data.text.slice(0, 3000).trim();
+    return findRelevantWindow(data.text, conceptHint);
   } catch (e) {
     return null;
   }
@@ -67,7 +87,7 @@ async function extractTextFromFile(filePath) {
     if (/\.pdf$/i.test(filePath)) {
       const pdfParse = require('pdf-parse');
       const data = await pdfParse(fs.readFileSync(filePath));
-      return data.text.slice(0, 3000).trim();
+      return findRelevantWindow(data.text, '');
     }
   } catch (e) {}
   return null;
@@ -178,4 +198,4 @@ async function generateImage(topic, subject) {
   }
 }
 
-module.exports = { pickTopic, generateEmailContent, generateImage, extractTextFromBuffer, extractTextFromFile, PERSONAS };
+module.exports = { pickTopic, generateEmailContent, generateImage, extractTextFromBuffer, extractTextFromFile, findRelevantWindow, PERSONAS };

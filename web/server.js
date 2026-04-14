@@ -20,6 +20,20 @@ const app = express();
 const PORT = process.env.PORT || 3001;
 const BASE_URL = process.env.BRIEFSTACK_URL || `http://localhost:${PORT}`;
 
+// Simple in-memory rate limiter for auth endpoint
+const authRateLimits = new Map(); // email -> { count, resetAt }
+function checkRateLimit(email) {
+  const now = Date.now();
+  const limit = authRateLimits.get(email);
+  if (limit && now < limit.resetAt) {
+    if (limit.count >= 3) return false;
+    limit.count++;
+  } else {
+    authRateLimits.set(email, { count: 1, resetAt: now + 10 * 60 * 1000 });
+  }
+  return true;
+}
+
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 app.use(express.static(path.join(__dirname, 'public')));
@@ -82,7 +96,18 @@ app.post('/api/auth/request', async (req, res) => {
   const { email } = req.body;
   if (!email || !email.includes('@')) return res.status(400).json({ error: 'Invalid email' });
 
-  const user = db.findOrCreateUser(email.trim().toLowerCase());
+  const normalizedEmail = email.trim().toLowerCase();
+  if (!checkRateLimit(normalizedEmail)) {
+    return res.status(429).json({ error: 'Too many requests. Try again in 10 minutes.' });
+  }
+
+  const user = db.findOrCreateUser(normalizedEmail);
+  // Set 7-day trial for new users
+  if (!user.trial_ends) {
+    const trialEnd = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString();
+    db.setTrialEnds(user.id, trialEnd);
+  }
+
   const token = crypto.randomBytes(32).toString('hex');
   const expires = new Date(Date.now() + 60 * 60 * 1000).toISOString(); // 1 hour
 
@@ -125,11 +150,28 @@ app.get('/dashboard', requireAuth, (req, res) => {
 
 // Get current user + settings
 app.get('/api/me', requireAuth, (req, res) => {
+  const user = db.getUserById(req.user.id); // re-fetch for latest onboarded flag
   const settings = db.getSettings(req.user.id);
   const uploads = db.getUploads(req.user.id);
   const customTopics = db.getCustomTopics(req.user.id);
   const history = db.getSentEmails(req.user.id, 30);
-  res.json({ user: { email: req.user.email }, settings, uploads, customTopics, history });
+  res.json({ user: { email: user.email, onboarded: user.onboarded || 0, trial_ends: user.trial_ends }, settings, uploads, customTopics, history });
+});
+
+// Complete onboarding: save settings, mark onboarded, fire first email
+app.post('/api/onboard', requireAuth, async (req, res) => {
+  const { context_text, persona, send_hour, timezone } = req.body;
+  db.saveSettings(req.user.id, {
+    context_text: context_text || '',
+    persona: persona || 'galloway',
+    send_hour: parseInt(send_hour) || 8,
+    timezone: timezone || 'UTC',
+    active: 1,
+  });
+  db.setOnboarded(req.user.id);
+  res.json({ ok: true });
+  // Fire first email asynchronously after response is sent
+  sendEmailForUser(req.user.id, req.user.email).catch(e => console.error('[Onboard] First email failed:', e.message));
 });
 
 // Save settings
@@ -205,6 +247,10 @@ app.post('/api/preview', requireAuth, async (req, res) => {
 
 // Send now (generate + send immediately)
 app.post('/api/send-now', requireAuth, async (req, res) => {
+  const user = db.getUserById(req.user.id);
+  if (!user.onboarded) {
+    return res.status(400).json({ error: 'Please complete your setup first using the onboarding wizard.' });
+  }
   try {
     await sendEmailForUser(req.user.id, req.user.email);
     res.json({ ok: true });
@@ -227,12 +273,16 @@ async function sendEmailForUser(userId, email) {
   const customTopics = db.getCustomTopics(userId);
   const { topic, total } = pickTopic(settings, customTopics.length > 0 ? customTopics : null);
 
-  // Get source text
+  // Get source text — pass concept as hint for smarter PDF window selection
   let uploadedText = null;
   if (settings.topic_source !== 'internet') {
     const uploads = db.getUploads(userId);
     if (uploads.length > 0) {
-      uploadedText = db.getUploadText(uploads[0].id, userId);
+      const rawText = db.getUploadText(uploads[0].id, userId);
+      if (rawText) {
+        const { findRelevantWindow } = require('./engine');
+        uploadedText = findRelevantWindow ? findRelevantWindow(rawText, topic.concept) : rawText.slice(0, 3000);
+      }
     }
     if (!uploadedText && topic.sourceFile) {
       const { extractTextFromFile } = require('./engine');
