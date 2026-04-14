@@ -1,0 +1,7 @@
+node_modules/
+briefstack.db
+briefstack.db-shm
+briefstack.db-wal
+outputs/
+*.log
+.DS_Store

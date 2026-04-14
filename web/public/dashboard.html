@@ -1,0 +1,723 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>BriefStack Dashboard</title>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      background: #0a0a10;
+      color: white;
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+      min-height: 100vh;
+      display: flex;
+    }
+
+    /* Sidebar */
+    .sidebar {
+      width: 220px;
+      flex-shrink: 0;
+      background: #0f0f18;
+      border-right: 1px solid rgba(255,255,255,0.06);
+      padding: 24px 16px;
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+      position: fixed;
+      top: 0; left: 0; bottom: 0;
+    }
+    .sidebar-logo { font-size: 16px; font-weight: 900; color: #7c6af7; letter-spacing: 0.15em; text-transform: uppercase; padding: 8px 12px 20px; }
+    .sidebar-link {
+      display: block;
+      padding: 9px 12px;
+      border-radius: 8px;
+      color: rgba(255,255,255,0.55);
+      font-size: 14px;
+      font-weight: 500;
+      cursor: pointer;
+      transition: all 0.15s;
+      text-decoration: none;
+    }
+    .sidebar-link:hover, .sidebar-link.active { background: rgba(124,106,247,0.15); color: white; }
+    .sidebar-link.active { color: #a89af9; }
+    .sidebar-email { margin-top: auto; font-size: 11px; color: rgba(255,255,255,0.25); padding: 8px 12px; }
+
+    /* Main */
+    .main { margin-left: 220px; flex: 1; padding: 32px 40px; max-width: 900px; }
+
+    h2 { font-size: 22px; font-weight: 800; margin-bottom: 4px; }
+    .section-sub { font-size: 14px; color: rgba(255,255,255,0.45); margin-bottom: 28px; }
+
+    /* Cards */
+    .card {
+      background: rgba(255,255,255,0.04);
+      border: 1px solid rgba(255,255,255,0.08);
+      border-radius: 16px;
+      padding: 28px;
+      margin-bottom: 20px;
+    }
+    .card-title { font-size: 14px; font-weight: 700; margin-bottom: 16px; color: rgba(255,255,255,0.7); text-transform: uppercase; letter-spacing: 0.08em; }
+
+    /* Tabs */
+    .tabs { display: none; }
+    .tab-content { display: none; }
+    .tab-content.active { display: block; }
+
+    /* Form elements */
+    label { display: block; font-size: 13px; color: rgba(255,255,255,0.6); margin-bottom: 6px; margin-top: 16px; font-weight: 600; }
+    label:first-child { margin-top: 0; }
+    input[type=text], input[type=email], input[type=number], select, textarea {
+      width: 100%;
+      background: rgba(255,255,255,0.06);
+      border: 1px solid rgba(255,255,255,0.1);
+      border-radius: 10px;
+      padding: 11px 14px;
+      font-size: 14px;
+      color: white;
+      outline: none;
+      font-family: inherit;
+    }
+    input:focus, select:focus, textarea:focus { border-color: #7c6af7; }
+    select option { background: #1a1a2e; }
+    textarea { min-height: 100px; resize: vertical; line-height: 1.6; }
+
+    /* Toggle */
+    .toggle-row { display: flex; align-items: center; gap: 12px; margin-top: 16px; }
+    .toggle { position: relative; width: 44px; height: 24px; }
+    .toggle input { opacity: 0; width: 0; height: 0; }
+    .slider {
+      position: absolute; inset: 0;
+      background: rgba(255,255,255,0.15);
+      border-radius: 24px;
+      cursor: pointer;
+      transition: 0.2s;
+    }
+    .slider::before {
+      content: '';
+      position: absolute;
+      width: 18px; height: 18px;
+      left: 3px; top: 3px;
+      background: white;
+      border-radius: 50%;
+      transition: 0.2s;
+    }
+    input:checked + .slider { background: #7c6af7; }
+    input:checked + .slider::before { transform: translateX(20px); }
+    .toggle-label { font-size: 14px; color: rgba(255,255,255,0.7); }
+
+    /* Buttons */
+    .btn {
+      display: inline-flex; align-items: center; gap: 8px;
+      padding: 10px 20px;
+      border-radius: 10px;
+      font-size: 14px;
+      font-weight: 700;
+      cursor: pointer;
+      border: none;
+      transition: opacity 0.2s;
+    }
+    .btn:hover { opacity: 0.85; }
+    .btn-primary { background: #7c6af7; color: white; }
+    .btn-secondary { background: rgba(255,255,255,0.08); color: white; }
+    .btn-danger { background: rgba(239,68,68,0.15); color: #fca5a5; }
+    .btn-sm { padding: 7px 14px; font-size: 12px; }
+    .btn-row { display: flex; gap: 10px; margin-top: 20px; flex-wrap: wrap; }
+
+    /* Persona cards */
+    .persona-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(180px, 1fr)); gap: 10px; margin-bottom: 16px; }
+    .persona-opt {
+      border: 2px solid rgba(255,255,255,0.08);
+      border-radius: 12px;
+      padding: 14px 16px;
+      cursor: pointer;
+      transition: all 0.15s;
+    }
+    .persona-opt:hover { border-color: rgba(124,106,247,0.4); }
+    .persona-opt.selected { border-color: #7c6af7; background: rgba(124,106,247,0.1); }
+    .persona-opt-name { font-size: 13px; font-weight: 700; margin-bottom: 3px; }
+    .persona-opt-desc { font-size: 11px; color: rgba(255,255,255,0.45); }
+
+    /* Upload area */
+    .upload-area {
+      border: 2px dashed rgba(255,255,255,0.12);
+      border-radius: 12px;
+      padding: 28px;
+      text-align: center;
+      cursor: pointer;
+      transition: border-color 0.2s;
+    }
+    .upload-area:hover, .upload-area.dragover { border-color: #7c6af7; }
+    .upload-area p { font-size: 14px; color: rgba(255,255,255,0.45); margin-top: 8px; }
+
+    /* File list */
+    .file-list { margin-top: 14px; display: flex; flex-direction: column; gap: 8px; }
+    .file-item {
+      display: flex; align-items: center; justify-content: space-between;
+      background: rgba(255,255,255,0.04);
+      border-radius: 8px;
+      padding: 10px 14px;
+      font-size: 13px;
+    }
+    .file-item-name { font-weight: 600; }
+    .file-item-date { font-size: 11px; color: rgba(255,255,255,0.35); }
+
+    /* History list */
+    .history-list { display: flex; flex-direction: column; gap: 8px; }
+    .history-item {
+      display: flex; align-items: center; justify-content: space-between;
+      background: rgba(255,255,255,0.04);
+      border-radius: 10px;
+      padding: 12px 16px;
+    }
+    .history-subject { font-size: 14px; font-weight: 600; margin-bottom: 3px; }
+    .history-meta { font-size: 11px; color: rgba(255,255,255,0.35); }
+    .history-item a { font-size: 12px; color: #7c6af7; text-decoration: none; white-space: nowrap; margin-left: 12px; }
+
+    /* Preview modal */
+    .modal-overlay {
+      display: none;
+      position: fixed; inset: 0;
+      background: rgba(0,0,0,0.8);
+      z-index: 100;
+      align-items: center;
+      justify-content: center;
+      padding: 20px;
+    }
+    .modal-overlay.open { display: flex; }
+    .modal {
+      background: white;
+      border-radius: 16px;
+      width: 100%;
+      max-width: 660px;
+      max-height: 85vh;
+      overflow-y: auto;
+    }
+    .modal-header {
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 16px 20px;
+      border-bottom: 1px solid #e2e8f0;
+      position: sticky; top: 0; background: white; z-index: 1;
+    }
+    .modal-header h3 { font-size: 14px; color: #1e293b; font-weight: 700; }
+    .modal-close { background: none; border: none; font-size: 20px; cursor: pointer; color: #94a3b8; }
+    #previewFrame { width: 100%; border: none; min-height: 500px; }
+
+    /* Toast */
+    .toast {
+      position: fixed; bottom: 24px; right: 24px;
+      background: #1e1e2e; border: 1px solid rgba(124,106,247,0.4);
+      color: white; padding: 12px 20px; border-radius: 12px;
+      font-size: 14px; font-weight: 600;
+      transform: translateY(80px); opacity: 0;
+      transition: all 0.3s; z-index: 200;
+    }
+    .toast.show { transform: translateY(0); opacity: 1; }
+
+    /* Loading spinner */
+    .spinner {
+      display: inline-block;
+      width: 16px; height: 16px;
+      border: 2px solid rgba(255,255,255,0.3);
+      border-top-color: white;
+      border-radius: 50%;
+      animation: spin 0.6s linear infinite;
+      vertical-align: middle;
+    }
+    @keyframes spin { to { transform: rotate(360deg); } }
+
+    /* Source toggle */
+    .source-tabs { display: flex; gap: 8px; margin-bottom: 16px; }
+    .source-tab {
+      padding: 8px 16px; border-radius: 8px;
+      font-size: 13px; font-weight: 600;
+      cursor: pointer; border: 1px solid rgba(255,255,255,0.1);
+      background: transparent; color: rgba(255,255,255,0.5);
+      transition: all 0.15s;
+    }
+    .source-tab.active { background: rgba(124,106,247,0.2); color: white; border-color: #7c6af7; }
+
+    /* Topic list */
+    .topic-list { display: flex; flex-direction: column; gap: 8px; margin-top: 12px; }
+    .topic-item {
+      display: flex; align-items: center; justify-content: space-between;
+      background: rgba(255,255,255,0.04); border-radius: 8px; padding: 10px 14px;
+    }
+    .topic-item-text { font-size: 13px; }
+    .topic-item-course { font-size: 11px; color: rgba(255,255,255,0.4); margin-top: 2px; }
+
+    @media (max-width: 700px) {
+      .sidebar { display: none; }
+      .main { margin-left: 0; padding: 20px; }
+    }
+  </style>
+</head>
+<body>
+
+<aside class="sidebar">
+  <div class="sidebar-logo">BriefStack</div>
+  <a class="sidebar-link active" onclick="showTab('overview')">Overview</a>
+  <a class="sidebar-link" onclick="showTab('persona')">Persona & Voice</a>
+  <a class="sidebar-link" onclick="showTab('source')">Source Material</a>
+  <a class="sidebar-link" onclick="showTab('schedule')">Schedule</a>
+  <a class="sidebar-link" onclick="showTab('history')">Email History</a>
+  <div class="sidebar-email" id="userEmail">Loading...</div>
+</aside>
+
+<main class="main">
+
+  <!-- Overview -->
+  <div class="tab-content active" id="tab-overview">
+    <h2>Your Daily Brief</h2>
+    <p class="section-sub">BriefStack sends you one concept every morning - from your materials, in your voice.</p>
+
+    <div class="card">
+      <div class="card-title">Status</div>
+      <div style="display:flex;align-items:center;gap:20px;flex-wrap:wrap;">
+        <div>
+          <div style="font-size:13px;color:rgba(255,255,255,0.45);margin-bottom:4px;">Sending to</div>
+          <div style="font-size:15px;font-weight:700;" id="statusEmail">-</div>
+        </div>
+        <div>
+          <div style="font-size:13px;color:rgba(255,255,255,0.45);margin-bottom:4px;">Send time</div>
+          <div style="font-size:15px;font-weight:700;" id="statusTime">-</div>
+        </div>
+        <div>
+          <div style="font-size:13px;color:rgba(255,255,255,0.45);margin-bottom:4px;">Persona</div>
+          <div style="font-size:15px;font-weight:700;" id="statusPersona">-</div>
+        </div>
+        <div>
+          <div style="font-size:13px;color:rgba(255,255,255,0.45);margin-bottom:4px;">Status</div>
+          <div style="font-size:15px;font-weight:700;" id="statusActive">-</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-title">Test Your Brief</div>
+      <p style="font-size:14px;color:rgba(255,255,255,0.55);margin-bottom:20px;">Generate and preview your next email right now, or send it directly to your inbox.</p>
+      <div class="btn-row">
+        <button class="btn btn-secondary" onclick="previewEmail()">
+          <span>Preview Email</span>
+        </button>
+        <button class="btn btn-primary" onclick="sendNow()">
+          <span>Send to My Inbox</span>
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Persona -->
+  <div class="tab-content" id="tab-persona">
+    <h2>Persona and Voice</h2>
+    <p class="section-sub">Choose how your brief is written. This changes the entire tone and style of each email.</p>
+
+    <div class="card">
+      <div class="card-title">Choose a Voice</div>
+      <div class="persona-grid" id="personaGrid">
+        <div class="persona-opt selected" data-persona="galloway">
+          <div class="persona-opt-name">Scott Galloway</div>
+          <div class="persona-opt-desc">Brutal, data-driven, provocative</div>
+        </div>
+        <div class="persona-opt" data-persona="graham">
+          <div class="persona-opt-name">Paul Graham</div>
+          <div class="persona-opt-desc">Contrarian, first-principles, startup</div>
+        </div>
+        <div class="persona-opt" data-persona="mckinsey">
+          <div class="persona-opt-name">McKinsey</div>
+          <div class="persona-opt-desc">Structured, frameworks, sharp</div>
+        </div>
+        <div class="persona-opt" data-persona="naval">
+          <div class="persona-opt-name">Naval Ravikant</div>
+          <div class="persona-opt-desc">Philosophical, wealth and leverage</div>
+        </div>
+        <div class="persona-opt" data-persona="economist">
+          <div class="persona-opt-name">The Economist</div>
+          <div class="persona-opt-desc">Dry wit, global lens, precise</div>
+        </div>
+        <div class="persona-opt" data-persona="custom">
+          <div class="persona-opt-name">Custom</div>
+          <div class="persona-opt-desc">Write your own prompt</div>
+        </div>
+      </div>
+
+      <div id="customPersonaSection" style="display:none;">
+        <label>Your custom persona prompt</label>
+        <textarea id="personaCustom" placeholder="You are a stoic Roman general who applies ancient military strategy to modern business problems..."></textarea>
+      </div>
+
+      <label>About you (the "So What" context)</label>
+      <textarea id="contextText" placeholder="I'm a BD Lead at an industrial VR training startup in Houston, transitioning the company from services to SaaS. I work with O&G clients. My main challenge is..."></textarea>
+      <p style="font-size:12px;color:rgba(255,255,255,0.3);margin-top:6px;">Every email ends with a 'So What for You' section. The more specific this context, the more useful that section will be.</p>
+
+      <div class="btn-row">
+        <button class="btn btn-primary" onclick="savePersona()">Save Voice Settings</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Source -->
+  <div class="tab-content" id="tab-source">
+    <h2>Source Material</h2>
+    <p class="section-sub">What should each brief be based on?</p>
+
+    <div class="card">
+      <div class="card-title">Topic Source</div>
+      <div class="source-tabs">
+        <button class="source-tab active" id="srcTabFiles" onclick="setSourceTab('files')">My Uploaded Files</button>
+        <button class="source-tab" id="srcTabInternet" onclick="setSourceTab('internet')">Internet Search Only</button>
+      </div>
+      <p style="font-size:13px;color:rgba(255,255,255,0.45);line-height:1.6;" id="srcDesc">
+        BriefStack will extract topics and context from your uploaded PDFs and slides.
+      </p>
+    </div>
+
+    <div class="card" id="uploadCard">
+      <div class="card-title">Upload Study Materials</div>
+      <div class="upload-area" id="uploadArea" onclick="document.getElementById('fileInput').click()">
+        <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,0.3)" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+        <p>Drop PDFs or slides here, or click to browse</p>
+      </div>
+      <input type="file" id="fileInput" style="display:none" accept=".pdf,.pptx,.docx" multiple>
+      <div class="file-list" id="fileList"></div>
+    </div>
+
+    <div class="card">
+      <div class="card-title">Custom Topics</div>
+      <p style="font-size:13px;color:rgba(255,255,255,0.45);margin-bottom:16px;">Add specific concepts you want covered. These override the default topic rotation.</p>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;">
+        <div>
+          <label>Course / Subject</label>
+          <input type="text" id="newCourse" placeholder="e.g. Competitive Strategy">
+        </div>
+        <div>
+          <label>Concept</label>
+          <input type="text" id="newConcept" placeholder="e.g. Porter's Five Forces">
+        </div>
+      </div>
+      <label>Context angle (how it applies to you)</label>
+      <input type="text" id="newAngle" placeholder="e.g. How does this apply to my market position at ShinyBox?">
+      <div class="btn-row">
+        <button class="btn btn-secondary btn-sm" onclick="addTopic()">Add Topic</button>
+      </div>
+      <div class="topic-list" id="topicList"></div>
+    </div>
+  </div>
+
+  <!-- Schedule -->
+  <div class="tab-content" id="tab-schedule">
+    <h2>Schedule</h2>
+    <p class="section-sub">When should your brief land in your inbox?</p>
+
+    <div class="card">
+      <label>Send Hour (UTC)</label>
+      <select id="sendHour">
+        <option value="5">5:00 UTC (midnight CT)</option>
+        <option value="6">6:00 UTC (1am CT)</option>
+        <option value="7">7:00 UTC (2am CT)</option>
+        <option value="8">8:00 UTC (3am CT)</option>
+        <option value="9">9:00 UTC (4am CT)</option>
+        <option value="10">10:00 UTC (5am CT)</option>
+        <option value="11">11:00 UTC (6am CT)</option>
+        <option value="12" selected>12:00 UTC (7am CT)</option>
+        <option value="13">13:00 UTC (8am CT)</option>
+        <option value="14">14:00 UTC (9am CT)</option>
+        <option value="15">15:00 UTC (10am CT)</option>
+        <option value="16">16:00 UTC (11am CT)</option>
+      </select>
+      <p style="font-size:12px;color:rgba(255,255,255,0.3);margin-top:6px;">Times shown in UTC. The web server uses UTC for scheduling.</p>
+
+      <div class="toggle-row" style="margin-top:20px;">
+        <label class="toggle">
+          <input type="checkbox" id="activeToggle" checked>
+          <span class="slider"></span>
+        </label>
+        <span class="toggle-label" id="activeLabel">Emails active</span>
+      </div>
+
+      <div class="btn-row">
+        <button class="btn btn-primary" onclick="saveSchedule()">Save Schedule</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- History -->
+  <div class="tab-content" id="tab-history">
+    <h2>Email History</h2>
+    <p class="section-sub">Your last 30 briefs. Click any to read it.</p>
+    <div class="card">
+      <div class="history-list" id="historyList">
+        <p style="color:rgba(255,255,255,0.35);font-size:14px;">No emails sent yet. Hit "Send to My Inbox" to generate your first one.</p>
+      </div>
+    </div>
+  </div>
+
+</main>
+
+<!-- Preview Modal -->
+<div class="modal-overlay" id="previewModal">
+  <div class="modal">
+    <div class="modal-header">
+      <h3 id="previewSubject">Email Preview</h3>
+      <button class="modal-close" onclick="closePreview()">x</button>
+    </div>
+    <iframe id="previewFrame" title="Email Preview"></iframe>
+  </div>
+</div>
+
+<!-- Toast -->
+<div class="toast" id="toast"></div>
+
+<script>
+let appData = null;
+let currentPersona = 'galloway';
+let currentSource = 'files';
+
+// Load data
+async function loadData() {
+  const res = await fetch('/api/me');
+  if (res.status === 401 || res.status === 302) { window.location = '/'; return; }
+  appData = await res.json();
+  render();
+}
+
+function render() {
+  const { user, settings, uploads, customTopics, history } = appData;
+
+  document.getElementById('userEmail').textContent = user.email;
+  document.getElementById('statusEmail').textContent = user.email;
+  document.getElementById('statusPersona').textContent = capitalize(settings.persona || 'galloway');
+  document.getElementById('statusTime').textContent = `${settings.send_hour}:00 UTC`;
+  document.getElementById('statusActive').textContent = settings.active ? 'Active' : 'Paused';
+
+  // Persona tab
+  currentPersona = settings.persona || 'galloway';
+  document.querySelectorAll('.persona-opt').forEach(el => {
+    el.classList.toggle('selected', el.dataset.persona === currentPersona);
+  });
+  document.getElementById('customPersonaSection').style.display = currentPersona === 'custom' ? 'block' : 'none';
+  document.getElementById('personaCustom').value = settings.persona_custom || '';
+  document.getElementById('contextText').value = settings.context_text || '';
+
+  // Source tab
+  currentSource = settings.topic_source || 'files';
+  setSourceTab(currentSource, false);
+
+  // File list
+  renderFileList(uploads);
+
+  // Topics
+  renderTopicList(customTopics);
+
+  // Schedule
+  document.getElementById('sendHour').value = settings.send_hour || 12;
+  document.getElementById('activeToggle').checked = !!settings.active;
+  document.getElementById('activeLabel').textContent = settings.active ? 'Emails active' : 'Emails paused';
+
+  // History
+  renderHistory(history);
+}
+
+function capitalize(s) { return s.charAt(0).toUpperCase() + s.slice(1); }
+
+function showTab(name) {
+  document.querySelectorAll('.tab-content').forEach(el => el.classList.remove('active'));
+  document.querySelectorAll('.sidebar-link').forEach(el => el.classList.remove('active'));
+  document.getElementById('tab-' + name).classList.add('active');
+  event.currentTarget.classList.add('active');
+}
+
+// Persona
+document.querySelectorAll('.persona-opt').forEach(el => {
+  el.addEventListener('click', () => {
+    document.querySelectorAll('.persona-opt').forEach(e => e.classList.remove('selected'));
+    el.classList.add('selected');
+    currentPersona = el.dataset.persona;
+    document.getElementById('customPersonaSection').style.display = currentPersona === 'custom' ? 'block' : 'none';
+  });
+});
+
+async function savePersona() {
+  const body = {
+    persona: currentPersona,
+    persona_custom: document.getElementById('personaCustom').value,
+    context_text: document.getElementById('contextText').value,
+  };
+  await fetch('/api/settings', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) });
+  toast('Voice settings saved');
+  loadData();
+}
+
+// Source
+function setSourceTab(src, save = true) {
+  currentSource = src;
+  document.getElementById('srcTabFiles').classList.toggle('active', src === 'files');
+  document.getElementById('srcTabInternet').classList.toggle('active', src === 'internet');
+  document.getElementById('uploadCard').style.display = src === 'files' ? 'block' : 'none';
+  document.getElementById('srcDesc').textContent = src === 'files'
+    ? 'BriefStack will extract topics and context from your uploaded PDFs and slides.'
+    : 'BriefStack will search the internet for real articles on each topic. No uploads needed.';
+  if (save) {
+    fetch('/api/settings', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ topic_source: src }) });
+  }
+}
+
+// File upload
+document.getElementById('fileInput').addEventListener('change', async (e) => {
+  for (const file of e.target.files) await uploadFile(file);
+  loadData();
+});
+
+const uploadArea = document.getElementById('uploadArea');
+uploadArea.addEventListener('dragover', (e) => { e.preventDefault(); uploadArea.classList.add('dragover'); });
+uploadArea.addEventListener('dragleave', () => uploadArea.classList.remove('dragover'));
+uploadArea.addEventListener('drop', async (e) => {
+  e.preventDefault();
+  uploadArea.classList.remove('dragover');
+  for (const file of e.dataTransfer.files) await uploadFile(file);
+  loadData();
+});
+
+async function uploadFile(file) {
+  const fd = new FormData();
+  fd.append('file', file);
+  toast(`Uploading ${file.name}...`);
+  const res = await fetch('/api/upload', { method: 'POST', body: fd });
+  const data = await res.json();
+  if (data.ok) toast(`Uploaded: ${file.name} (${data.chars} chars extracted)`);
+}
+
+function renderFileList(uploads) {
+  const el = document.getElementById('fileList');
+  if (!uploads.length) { el.innerHTML = ''; return; }
+  el.innerHTML = uploads.map(u => `
+    <div class="file-item">
+      <div>
+        <div class="file-item-name">${u.original_name}</div>
+        <div class="file-item-date">${u.created_at.split('T')[0]}</div>
+      </div>
+      <button class="btn btn-danger btn-sm" onclick="deleteFile(${u.id})">Remove</button>
+    </div>
+  `).join('');
+}
+
+async function deleteFile(id) {
+  await fetch(`/api/upload/${id}`, { method: 'DELETE' });
+  loadData();
+}
+
+// Topics
+function renderTopicList(topics) {
+  const el = document.getElementById('topicList');
+  if (!topics.length) { el.innerHTML = '<p style="font-size:13px;color:rgba(255,255,255,0.3);">No custom topics yet. Add some above, or leave empty to use the default topic rotation.</p>'; return; }
+  el.innerHTML = topics.map(t => `
+    <div class="topic-item">
+      <div>
+        <div class="topic-item-text">${t.concept}</div>
+        <div class="topic-item-course">${t.course}</div>
+      </div>
+      <button class="btn btn-danger btn-sm" onclick="deleteTopic(${t.id})">Remove</button>
+    </div>
+  `).join('');
+}
+
+async function addTopic() {
+  const course = document.getElementById('newCourse').value.trim();
+  const concept = document.getElementById('newConcept').value.trim();
+  const angle = document.getElementById('newAngle').value.trim();
+  if (!course || !concept) return toast('Course and concept are required');
+  await fetch('/api/topics', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ course, concept, context_angle: angle }) });
+  document.getElementById('newCourse').value = '';
+  document.getElementById('newConcept').value = '';
+  document.getElementById('newAngle').value = '';
+  loadData();
+}
+
+async function deleteTopic(id) {
+  await fetch(`/api/topics/${id}`, { method: 'DELETE' });
+  loadData();
+}
+
+// Schedule
+async function saveSchedule() {
+  const body = {
+    send_hour: document.getElementById('sendHour').value,
+    active: document.getElementById('activeToggle').checked ? 1 : 0,
+  };
+  await fetch('/api/settings', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) });
+  toast('Schedule saved');
+  document.getElementById('activeLabel').textContent = body.active ? 'Emails active' : 'Emails paused';
+}
+
+// History
+function renderHistory(history) {
+  const el = document.getElementById('historyList');
+  if (!history.length) return;
+  el.innerHTML = history.map(h => `
+    <div class="history-item">
+      <div>
+        <div class="history-subject">${h.subject || 'Untitled'}</div>
+        <div class="history-meta">${h.topic_concept} - ${h.sent_at ? h.sent_at.split('T')[0] : 'unknown date'}</div>
+      </div>
+      <a href="/api/email/${h.id}" target="_blank">View</a>
+    </div>
+  `).join('');
+}
+
+// Preview
+async function previewEmail() {
+  const btn = event.currentTarget;
+  btn.innerHTML = '<span class="spinner"></span> Generating...';
+  btn.disabled = true;
+  try {
+    const res = await fetch('/api/preview', { method: 'POST' });
+    const data = await res.json();
+    if (!data.ok) throw new Error(data.error);
+    document.getElementById('previewSubject').textContent = data.subject;
+    const frame = document.getElementById('previewFrame');
+    frame.srcdoc = data.html;
+    document.getElementById('previewModal').classList.add('open');
+  } catch (e) {
+    toast('Preview failed: ' + e.message);
+  } finally {
+    btn.innerHTML = '<span>Preview Email</span>';
+    btn.disabled = false;
+  }
+}
+
+function closePreview() {
+  document.getElementById('previewModal').classList.remove('open');
+}
+
+// Send now
+async function sendNow() {
+  const btn = event.currentTarget;
+  btn.innerHTML = '<span class="spinner"></span> Sending...';
+  btn.disabled = true;
+  try {
+    const res = await fetch('/api/send-now', { method: 'POST' });
+    const data = await res.json();
+    if (!data.ok) throw new Error(data.error);
+    toast('Email sent! Check your inbox.');
+    loadData();
+  } catch (e) {
+    toast('Send failed: ' + e.message);
+  } finally {
+    btn.innerHTML = '<span>Send to My Inbox</span>';
+    btn.disabled = false;
+  }
+}
+
+// Toast
+function toast(msg) {
+  const el = document.getElementById('toast');
+  el.textContent = msg;
+  el.classList.add('show');
+  setTimeout(() => el.classList.remove('show'), 3000);
+}
+
+loadData();
+</script>
+</body>
+</html>
