@@ -9,7 +9,7 @@ const express = require('express');
 const path = require('path');
 const crypto = require('crypto');
 const cron = require('node-cron');
-const nodemailer = require('nodemailer');
+const { Resend } = require('resend');
 const multer = require('multer');
 
 const db = require('./db');
@@ -60,17 +60,12 @@ function requireAuth(req, res, next) {
 }
 
 // --- Email sending ---
-function getMailer() {
-  return nodemailer.createTransport({
-    service: 'gmail',
-    auth: { user: process.env.GMAIL_USER, pass: process.env.GMAIL_APP_PASSWORD },
-  });
-}
+const resend = new Resend(process.env.RESEND_API_KEY);
+const FROM_EMAIL = process.env.FROM_EMAIL || 'BriefStack <onboarding@resend.dev>';
 
 async function sendMagicLink(email, link) {
-  const mailer = getMailer();
-  await mailer.sendMail({
-    from: `"BriefStack" <${process.env.GMAIL_USER}>`,
+  await resend.emails.send({
+    from: FROM_EMAIL,
     to: email,
     subject: 'Your BriefStack login link',
     html: `
@@ -352,9 +347,8 @@ async function sendEmailForUser(userId, email) {
   const sessionToken = db.getDb().prepare('SELECT token FROM magic_links WHERE user_id = ? ORDER BY id DESC LIMIT 1').get(userId);
   const fullHtml = buildFullHtml(subject, bodyHtml, topic, date, imageDataUri, sessionToken ? sessionToken.token : null);
 
-  const mailer = getMailer();
-  await mailer.sendMail({
-    from: `"BriefStack" <${process.env.GMAIL_USER}>`,
+  await resend.emails.send({
+    from: FROM_EMAIL,
     to: email,
     subject: `[BriefStack] ${subject}`,
     html: fullHtml,
