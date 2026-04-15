@@ -9,7 +9,6 @@ const express = require('express');
 const path = require('path');
 const crypto = require('crypto');
 const cron = require('node-cron');
-const { Resend } = require('resend');
 const multer = require('multer');
 
 const db = require('./db');
@@ -60,26 +59,30 @@ function requireAuth(req, res, next) {
 }
 
 // --- Email sending ---
-function getResend() {
-  if (!process.env.RESEND_API_KEY) throw new Error('RESEND_API_KEY is not set');
-  return new Resend(process.env.RESEND_API_KEY);
-}
 const FROM_EMAIL = process.env.FROM_EMAIL || 'BriefStack <onboarding@resend.dev>';
 
-async function sendMagicLink(email, link) {
-  await getResend().emails.send({
-    from: FROM_EMAIL,
-    to: email,
-    subject: 'Your BriefStack login link',
-    html: `
-      <div style="font-family:sans-serif;max-width:480px;margin:0 auto;padding:32px 24px;background:#0f0f13;border-radius:16px;color:white;">
-        <h2 style="color:#7c6af7;margin:0 0 16px;">BriefStack</h2>
-        <p style="color:rgba(255,255,255,0.8);margin:0 0 24px;">Click the button below to sign in. Link expires in 1 hour.</p>
-        <a href="${link}" style="display:inline-block;background:#7c6af7;color:white;font-weight:700;padding:12px 28px;border-radius:10px;text-decoration:none;font-size:15px;">Sign In to BriefStack</a>
-        <p style="color:rgba(255,255,255,0.4);font-size:12px;margin:24px 0 0;">If you didn't request this, ignore this email.</p>
-      </div>
-    `,
+async function sendResendEmail(to, subject, html) {
+  const apiKey = process.env.RESEND_API_KEY;
+  if (!apiKey) throw new Error('RESEND_API_KEY is not set');
+  const res = await fetch('https://api.resend.com/emails', {
+    method: 'POST',
+    headers: { 'Authorization': `Bearer ${apiKey}`, 'Content-Type': 'application/json' },
+    body: JSON.stringify({ from: FROM_EMAIL, to, subject, html }),
   });
+  const data = await res.json();
+  if (!res.ok) throw new Error(`Resend error: ${JSON.stringify(data)}`);
+  return data;
+}
+
+async function sendMagicLink(email, link) {
+  await sendResendEmail(email, 'Your BriefStack login link', `
+    <div style="font-family:sans-serif;max-width:480px;margin:0 auto;padding:32px 24px;background:#0f0f13;border-radius:16px;color:white;">
+      <h2 style="color:#7c6af7;margin:0 0 16px;">BriefStack</h2>
+      <p style="color:rgba(255,255,255,0.8);margin:0 0 24px;">Click the button below to sign in. Link expires in 1 hour.</p>
+      <a href="${link}" style="display:inline-block;background:#7c6af7;color:white;font-weight:700;padding:12px 28px;border-radius:10px;text-decoration:none;font-size:15px;">Sign In to BriefStack</a>
+      <p style="color:rgba(255,255,255,0.4);font-size:12px;margin:24px 0 0;">If you didn't request this, ignore this email.</p>
+    </div>
+  `);
 }
 
 // --- Routes ---
@@ -350,12 +353,7 @@ async function sendEmailForUser(userId, email) {
   const sessionToken = db.getDb().prepare('SELECT token FROM magic_links WHERE user_id = ? ORDER BY id DESC LIMIT 1').get(userId);
   const fullHtml = buildFullHtml(subject, bodyHtml, topic, date, imageDataUri, sessionToken ? sessionToken.token : null);
 
-  await getResend().emails.send({
-    from: FROM_EMAIL,
-    to: email,
-    subject: `[BriefStack] ${subject}`,
-    html: fullHtml,
-  });
+  await sendResendEmail(email, `[BriefStack] ${subject}`, fullHtml);
 
   db.saveSentEmail(userId, subject, fullHtml, topic.concept, topic.course);
   db.incrementTopicIndex(userId, total);
