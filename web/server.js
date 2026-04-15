@@ -59,23 +59,30 @@ function requireAuth(req, res, next) {
 }
 
 // --- Email sending ---
-const FROM_EMAIL = process.env.FROM_EMAIL || 'BriefStack <onboarding@resend.dev>';
+const FROM_NAME = 'BriefStack';
 
-async function sendResendEmail(to, subject, html) {
-  const apiKey = process.env.RESEND_API_KEY;
-  if (!apiKey) throw new Error('RESEND_API_KEY is not set');
-  const res = await fetch('https://api.resend.com/emails', {
+async function sendBrevoEmail(to, subject, html) {
+  const apiKey = process.env.BREVO_API_KEY;
+  const fromEmail = process.env.BREVO_FROM_EMAIL;
+  if (!apiKey) throw new Error('BREVO_API_KEY is not set');
+  if (!fromEmail) throw new Error('BREVO_FROM_EMAIL is not set');
+  const res = await fetch('https://api.brevo.com/v3/smtp/email', {
     method: 'POST',
-    headers: { 'Authorization': `Bearer ${apiKey}`, 'Content-Type': 'application/json' },
-    body: JSON.stringify({ from: FROM_EMAIL, to, subject, html }),
+    headers: { 'api-key': apiKey, 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      sender: { name: FROM_NAME, email: fromEmail },
+      to: [{ email: to }],
+      subject,
+      htmlContent: html,
+    }),
   });
   const data = await res.json();
-  if (!res.ok) throw new Error(`Resend error: ${JSON.stringify(data)}`);
+  if (!res.ok) throw new Error(`Brevo error: ${JSON.stringify(data)}`);
   return data;
 }
 
 async function sendMagicLink(email, link) {
-  await sendResendEmail(email, 'Your BriefStack login link', `
+  await sendBrevoEmail(email, 'Your BriefStack login link', `
     <div style="font-family:sans-serif;max-width:480px;margin:0 auto;padding:32px 24px;background:#0f0f13;border-radius:16px;color:white;">
       <h2 style="color:#7c6af7;margin:0 0 16px;">BriefStack</h2>
       <p style="color:rgba(255,255,255,0.8);margin:0 0 24px;">Click the button below to sign in. Link expires in 1 hour.</p>
@@ -208,14 +215,30 @@ app.get('/api/me', requireAuth, (req, res) => {
   res.json({ user: { email: user.email, onboarded: user.onboarded || 0, trial_ends: user.trial_ends }, settings, uploads, customTopics, history });
 });
 
+// Convert local hour to UTC hour using timezone string
+function localHourToUtc(localHour, timezone) {
+  try {
+    const now = new Date();
+    const localStr = new Intl.DateTimeFormat('en-US', { timeZone: timezone, hour: 'numeric', hour12: false }).format(now);
+    const utcStr = new Intl.DateTimeFormat('en-US', { timeZone: 'UTC', hour: 'numeric', hour12: false }).format(now);
+    const offsetHours = (parseInt(utcStr) - parseInt(localStr) + 24) % 24;
+    return (localHour + offsetHours) % 24;
+  } catch (e) {
+    return localHour; // fallback if timezone invalid
+  }
+}
+
 // Complete onboarding: save settings, mark onboarded, fire first email
 app.post('/api/onboard', requireAuth, async (req, res) => {
   const { context_text, persona, send_hour, timezone } = req.body;
+  const tz = timezone || 'America/Chicago';
+  const localHour = parseInt(send_hour) || 8;
   db.saveSettings(req.user.id, {
     context_text: context_text || '',
     persona: persona || 'galloway',
-    send_hour: parseInt(send_hour) || 8,
-    timezone: timezone || 'UTC',
+    send_hour: localHour,
+    send_hour_utc: localHourToUtc(localHour, tz),
+    timezone: tz,
     active: 1,
   });
   db.setOnboarded(req.user.id);
@@ -227,9 +250,12 @@ app.post('/api/onboard', requireAuth, async (req, res) => {
 // Save settings
 app.post('/api/settings', requireAuth, (req, res) => {
   const { persona, persona_custom, context_text, topic_source, send_hour, send_days, timezone, active } = req.body;
+  const tz = timezone || 'America/Chicago';
+  const localHour = parseInt(send_hour) || 8;
   db.saveSettings(req.user.id, { persona, persona_custom, context_text, topic_source,
-    send_hour: parseInt(send_hour) || 8, send_days: send_days || 'daily',
-    timezone, active: active !== undefined ? (active ? 1 : 0) : undefined });
+    send_hour: localHour, send_hour_utc: localHourToUtc(localHour, tz),
+    send_days: send_days || 'daily', timezone: tz,
+    active: active !== undefined ? (active ? 1 : 0) : undefined });
   res.json({ ok: true });
 });
 
@@ -353,7 +379,7 @@ async function sendEmailForUser(userId, email) {
   const sessionToken = db.getDb().prepare('SELECT token FROM magic_links WHERE user_id = ? ORDER BY id DESC LIMIT 1').get(userId);
   const fullHtml = buildFullHtml(subject, bodyHtml, topic, date, imageDataUri, sessionToken ? sessionToken.token : null);
 
-  await sendResendEmail(email, `[BriefStack] ${subject}`, fullHtml);
+  await sendBrevoEmail(email, `[BriefStack] ${subject}`, fullHtml);
 
   db.saveSentEmail(userId, subject, fullHtml, topic.concept, topic.course);
   db.incrementTopicIndex(userId, total);

@@ -12,9 +12,17 @@ let db;
 
 function getDb() {
   if (!db) {
-    db = new DatabaseSync(DB_PATH);
-    db.exec('PRAGMA journal_mode = WAL');
-    migrate(db);
+    try {
+      // Ensure directory exists (important for Railway Volume paths)
+      const dir = path.dirname(DB_PATH);
+      if (!fs.existsSync(dir)) fs.mkdirSync(dir, { recursive: true });
+      db = new DatabaseSync(DB_PATH);
+      db.exec('PRAGMA journal_mode = WAL');
+      migrate(db);
+    } catch (e) {
+      console.error('[BriefStack] FATAL: Could not open database at', DB_PATH, '—', e.message);
+      process.exit(1);
+    }
   }
   return db;
 }
@@ -24,6 +32,7 @@ function migrate(db) {
   try { db.exec(`ALTER TABLE users ADD COLUMN onboarded INTEGER DEFAULT 0`) } catch(e) {}
   try { db.exec(`ALTER TABLE users ADD COLUMN trial_ends TEXT`) } catch(e) {}
   try { db.exec(`ALTER TABLE settings ADD COLUMN send_days TEXT DEFAULT 'daily'`) } catch(e) {}
+  try { db.exec(`ALTER TABLE settings ADD COLUMN send_hour_utc INTEGER`) } catch(e) {}
   // Fix: change default topic_source to internet for existing rows without uploads
   try { db.exec(`UPDATE settings SET topic_source = 'internet' WHERE topic_source = 'files' AND user_id NOT IN (SELECT DISTINCT user_id FROM uploads)`) } catch(e) {}
 
@@ -160,7 +169,7 @@ function getSettings(userId) {
 }
 
 function saveSettings(userId, updates) {
-  const allowed = ['persona', 'persona_custom', 'context_text', 'topic_source', 'send_hour', 'send_days', 'timezone', 'active'];
+  const allowed = ['persona', 'persona_custom', 'context_text', 'topic_source', 'send_hour', 'send_hour_utc', 'send_days', 'timezone', 'active'];
   const fields = Object.keys(updates).filter(k => allowed.includes(k) && updates[k] !== undefined && updates[k] !== null);
   if (!fields.length) return;
   const set = fields.map(f => `${f} = ?`).join(', ');
@@ -232,12 +241,16 @@ function getSentEmailHtml(emailId, userId) {
 
 function getActiveUsersForHour(utcHour, utcDow) {
   // utcDow: 0=Sun,1=Mon,...,6=Sat
+  // Use send_hour_utc if set, otherwise fall back to send_hour (legacy)
   const rows = getDb().prepare(`
     SELECT u.id, u.email, s.*
     FROM users u
     JOIN settings s ON s.user_id = u.id
-    WHERE s.active = 1 AND s.send_hour = ?
-  `).all(utcHour);
+    WHERE s.active = 1 AND (
+      (s.send_hour_utc IS NOT NULL AND s.send_hour_utc = ?) OR
+      (s.send_hour_utc IS NULL AND s.send_hour = ?)
+    )
+  `).all(utcHour, utcHour);
 
   // Filter by send_days
   return rows.filter(u => {
