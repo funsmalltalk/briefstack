@@ -61,7 +61,7 @@ function requireAuth(req, res, next) {
 
 // --- Email sending ---
 const resend = new Resend(process.env.RESEND_API_KEY);
-const FROM_EMAIL = 'BriefStack <onboarding@resend.dev>';
+const FROM_EMAIL = process.env.FROM_EMAIL || 'BriefStack <onboarding@resend.dev>';
 
 async function sendMagicLink(email, link) {
   await resend.emails.send({
