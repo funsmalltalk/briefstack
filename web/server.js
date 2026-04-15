@@ -60,11 +60,14 @@ function requireAuth(req, res, next) {
 }
 
 // --- Email sending ---
-const resend = new Resend(process.env.RESEND_API_KEY);
+function getResend() {
+  if (!process.env.RESEND_API_KEY) throw new Error('RESEND_API_KEY is not set');
+  return new Resend(process.env.RESEND_API_KEY);
+}
 const FROM_EMAIL = process.env.FROM_EMAIL || 'BriefStack <onboarding@resend.dev>';
 
 async function sendMagicLink(email, link) {
-  await resend.emails.send({
+  await getResend().emails.send({
     from: FROM_EMAIL,
     to: email,
     subject: 'Your BriefStack login link',
@@ -347,7 +350,7 @@ async function sendEmailForUser(userId, email) {
   const sessionToken = db.getDb().prepare('SELECT token FROM magic_links WHERE user_id = ? ORDER BY id DESC LIMIT 1').get(userId);
   const fullHtml = buildFullHtml(subject, bodyHtml, topic, date, imageDataUri, sessionToken ? sessionToken.token : null);
 
-  await resend.emails.send({
+  await getResend().emails.send({
     from: FROM_EMAIL,
     to: email,
     subject: `[BriefStack] ${subject}`,
