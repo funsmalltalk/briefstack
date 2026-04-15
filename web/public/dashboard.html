@@ -495,10 +495,19 @@
   <!-- Schedule -->
   <div class="tab-content" id="tab-schedule">
     <h2>Schedule</h2>
-    <p class="section-sub">When should your brief land in your inbox?</p>
+    <p class="section-sub">When and how often should your brief arrive?</p>
 
     <div class="card">
-      <div class="card-title">Send Time</div>
+      <div class="card-title">Frequency</div>
+      <div style="display:grid;grid-template-columns:repeat(2,1fr);gap:8px;margin-bottom:20px;" id="freqGrid">
+        <div class="time-card" data-days="daily" onclick="selectFreq(this,'daily')"><div class="time-card-hour">Daily</div><div class="time-card-label">7 days/week</div></div>
+        <div class="time-card" data-days="weekdays" onclick="selectFreq(this,'weekdays')"><div class="time-card-hour">Weekdays</div><div class="time-card-label">Mon–Fri</div></div>
+        <div class="time-card" data-days="mwf" onclick="selectFreq(this,'mwf')"><div class="time-card-hour">3× /week</div><div class="time-card-label">Mon · Wed · Fri</div></div>
+        <div class="time-card" data-days="weekly" onclick="selectFreq(this,'weekly')"><div class="time-card-hour">Weekly</div><div class="time-card-label">Mondays only</div></div>
+      </div>
+      <input type="hidden" id="sendDays" value="daily">
+
+      <div class="card-title" style="margin-top:4px;">Send Time</div>
       <p style="font-size:12px;color:#a89af9;margin-bottom:16px;" id="tzDisplay">Detecting your timezone...</p>
       <div class="time-grid" id="scheduleTimeGrid"></div>
       <input type="hidden" id="sendHour" value="13">
@@ -559,8 +568,14 @@
     <!-- Step 3: Schedule -->
     <div class="onboard-body" id="onboard-step-3" style="display:none;">
       <h3>When should it arrive?</h3>
-      <p>Pick a morning time. Your brief will land every day at this time.</p>
-      <p style="font-size:12px;color:#a89af9;margin:-12px 0 16px;" id="onboardTzLabel">Detecting timezone...</p>
+      <p>How often and at what time each morning.</p>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:16px;" id="onboardFreqGrid">
+        <div class="onboard-persona-opt selected" data-freq="daily" onclick="selectOnboardFreq(this,'daily')"><div class="onboard-persona-name">Daily</div><div class="onboard-persona-desc">7 days/week</div></div>
+        <div class="onboard-persona-opt" data-freq="weekdays" onclick="selectOnboardFreq(this,'weekdays')"><div class="onboard-persona-name">Weekdays</div><div class="onboard-persona-desc">Mon–Fri only</div></div>
+        <div class="onboard-persona-opt" data-freq="mwf" onclick="selectOnboardFreq(this,'mwf')"><div class="onboard-persona-name">3× / week</div><div class="onboard-persona-desc">Mon · Wed · Fri</div></div>
+        <div class="onboard-persona-opt" data-freq="weekly" onclick="selectOnboardFreq(this,'weekly')"><div class="onboard-persona-name">Weekly</div><div class="onboard-persona-desc">Mondays only</div></div>
+      </div>
+      <p style="font-size:12px;color:#a89af9;margin-bottom:12px;" id="onboardTzLabel">Detecting timezone...</p>
       <div class="time-grid" id="onboardTimeGrid"></div>
       <button class="onboard-btn-primary" id="onboardFinalBtn" onclick="completeOnboarding()">Send My First Brief Now →</button>
       <button class="onboard-btn-back" onclick="onboardBack(2)">← Back</button>
@@ -605,6 +620,7 @@ const PERSONA_LIST = [
 // --- Onboarding ---
 let onboardPersona = 'galloway';
 let onboardHour = 13; // UTC default (8am CT)
+let onboardFreq = 'daily';
 
 function showOnboardingModal() {
   document.getElementById('onboardModal').classList.add('open');
@@ -675,6 +691,12 @@ function onboardBack(step) {
   document.getElementById('onboardProgressBar').style.width = `${Math.round(step / 3 * 100)}%`;
 }
 
+function selectOnboardFreq(el, freq) {
+  document.querySelectorAll('#onboardFreqGrid .onboard-persona-opt').forEach(e => e.classList.remove('selected'));
+  el.classList.add('selected');
+  onboardFreq = freq;
+}
+
 async function completeOnboarding() {
   const btn = document.getElementById('onboardFinalBtn');
   btn.textContent = 'Sending your first brief...';
@@ -689,6 +711,7 @@ async function completeOnboarding() {
         context_text: document.getElementById('onboardContext').value,
         persona: onboardPersona,
         send_hour: onboardHour,
+        send_days: onboardFreq,
         timezone: tz,
       }),
     });
@@ -741,11 +764,16 @@ function render() {
   // Topics
   renderTopicList(customTopics);
 
+  // Schedule - frequency
+  const savedDays = settings.send_days || 'daily';
+  document.getElementById('sendDays').value = savedDays;
+  document.querySelectorAll('#freqGrid .time-card').forEach(el => {
+    el.classList.toggle('selected', el.dataset.days === savedDays);
+  });
   // Schedule - build timezone-aware grid
   buildOnboardTimeGrid('scheduleTimeGrid', 'tzDisplay', false);
   const savedHour = settings.send_hour || 13;
   document.getElementById('sendHour').value = savedHour;
-  // Select the matching card
   setTimeout(() => {
     const card = document.querySelector(`#scheduleTimeGrid .time-card[data-utc="${savedHour}"]`);
     if (card) { card.classList.add('selected'); }
@@ -878,10 +906,17 @@ async function deleteTopic(id) {
   loadData();
 }
 
+function selectFreq(el, days) {
+  document.querySelectorAll('#freqGrid .time-card').forEach(e => e.classList.remove('selected'));
+  el.classList.add('selected');
+  document.getElementById('sendDays').value = days;
+}
+
 // Schedule
 async function saveSchedule() {
   const body = {
     send_hour: parseInt(document.getElementById('sendHour').value) || 13,
+    send_days: document.getElementById('sendDays').value || 'daily',
     timezone: Intl.DateTimeFormat().resolvedOptions().timeZone,
     active: document.getElementById('activeToggle').checked ? 1 : 0,
   };

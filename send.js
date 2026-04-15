@@ -9,7 +9,7 @@ const nodemailer = require('nodemailer');
 // DASHBOARD_URL is replaced at runtime if the web app is running
 const DASHBOARD_URL = process.env.BRIEFSTACK_URL || 'http://localhost:3001';
 
-function buildFullHtml(subject, bodyHtml, topic, date, imageDataUri = null) {
+function buildFullHtml(subject, bodyHtml, topic, date, imageDataUri = null, unsubToken = null) {
   const imageBlock = imageDataUri
     ? `<img src="${imageDataUri}" alt="${topic.concept}" style="width:100%;border-radius:16px 16px 0 0;display:block;max-height:280px;object-fit:cover;">`
     : '';
@@ -55,7 +55,12 @@ function buildFullHtml(subject, bodyHtml, topic, date, imageDataUri = null) {
 
   <!-- Footer -->
   <div style="text-align:center;padding:8px 0 16px;">
-    <p style="font-size:11px;color:#64748b;margin:0;">BriefStack - powered by your study materials and Claude</p>
+    <p style="font-size:11px;color:#64748b;margin:0 0 6px;">BriefStack · AI-generated content for educational purposes only</p>
+    <p style="font-size:11px;color:#94a3b8;margin:0;">
+      ${unsubToken ? `<a href="${DASHBOARD_URL}/unsubscribe?token=${unsubToken}" style="color:#94a3b8;">Unsubscribe</a> &nbsp;·&nbsp;` : ''}
+      <a href="${DASHBOARD_URL}/terms" style="color:#94a3b8;">Terms</a> &nbsp;·&nbsp;
+      <a href="${DASHBOARD_URL}/privacy" style="color:#94a3b8;">Privacy</a>
+    </p>
   </div>
 
 </div>

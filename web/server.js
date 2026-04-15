@@ -41,14 +41,14 @@ app.use(express.static(path.join(__dirname, 'public')));
 // File uploads: store in memory for parsing
 const upload = multer({ storage: multer.memoryStorage(), limits: { fileSize: 20 * 1024 * 1024 } });
 
-// Simple cookie-based session (token in cookie)
+// Session lookup — token is set as a 30-day cookie on verify, sessions persist
+// We look up the magic link record but do NOT enforce expiry (it's a session token at this point)
 function getSession(req) {
   const token = req.headers['x-session-token'] || req.query.token || (req.headers.cookie || '').match(/bs_token=([^;]+)/)?.[1];
   if (!token) return null;
-  const link = db.getMagicLink(token);
+  // Find by token regardless of expiry/used status (it's being used as a persistent session)
+  const link = db.getMagicLinkByToken(token);
   if (!link) return null;
-  // Check expiry
-  if (new Date(link.expires_at) < new Date()) return null;
   return db.getUserById(link.user_id);
 }
 
@@ -89,6 +89,55 @@ async function sendMagicLink(email, link) {
 // Landing page
 app.get('/', (req, res) => {
   res.sendFile(path.join(__dirname, 'public', 'index.html'));
+});
+
+// Legal pages
+app.get('/terms', (req, res) => res.sendFile(path.join(__dirname, 'public', 'terms.html')));
+app.get('/privacy', (req, res) => res.sendFile(path.join(__dirname, 'public', 'privacy.html')));
+
+// Unsubscribe
+app.get('/unsubscribe', (req, res) => {
+  const { token } = req.query;
+  if (token) {
+    const link = db.getMagicLinkByToken(token);
+    if (link) {
+      db.saveSettings(link.user_id, { active: 0 });
+      return res.send(`<html><body style="font-family:sans-serif;text-align:center;padding:60px;background:#f9fafb"><h2>Unsubscribed</h2><p>You've been unsubscribed from BriefStack daily emails. <a href="/">Return to homepage</a>.</p></body></html>`);
+    }
+  }
+  res.send(`<html><body style="font-family:sans-serif;text-align:center;padding:60px;background:#f9fafb"><h2>Link invalid</h2><p>This unsubscribe link has expired. <a href="/">Go to your dashboard</a> to manage settings.</p></body></html>`);
+});
+
+// Admin leads page (protected by env var password)
+app.get('/admin', (req, res) => {
+  const adminKey = process.env.ADMIN_KEY || 'briefstack-admin';
+  if (req.query.key !== adminKey) return res.status(401).send('Unauthorized');
+  const users = db.getDb().prepare(`
+    SELECT u.id, u.email, u.created_at, u.onboarded, u.trial_ends,
+           s.persona, s.send_days, s.active, s.topic_source,
+           (SELECT COUNT(*) FROM sent_emails WHERE user_id = u.id) as emails_sent
+    FROM users u LEFT JOIN settings s ON s.user_id = u.id
+    ORDER BY u.created_at DESC
+  `).all();
+  const rows = users.map(u => `
+    <tr>
+      <td>${u.email}</td>
+      <td>${(u.created_at || '').split('T')[0]}</td>
+      <td>${u.onboarded ? '✅' : '⏳'}</td>
+      <td>${u.active ? '🟢' : '⏸️'}</td>
+      <td>${u.persona || '-'}</td>
+      <td>${u.send_days || 'daily'}</td>
+      <td>${u.emails_sent || 0}</td>
+      <td>${u.trial_ends ? (u.trial_ends || '').split('T')[0] : '-'}</td>
+    </tr>`).join('');
+  res.send(`<!DOCTYPE html><html><head><title>BriefStack Admin</title>
+    <style>body{font-family:sans-serif;padding:32px;background:#f9fafb}h1{color:#4f46e5}table{border-collapse:collapse;width:100%}th,td{border:1px solid #e5e7eb;padding:8px 12px;text-align:left}th{background:#f3f4f6;font-size:12px;text-transform:uppercase}tr:hover{background:#f9fafb}a{color:#4f46e5}</style>
+    </head><body>
+    <h1>BriefStack Leads</h1>
+    <p style="color:#6b7280">${users.length} signups total</p>
+    <table><thead><tr><th>Email</th><th>Signed Up</th><th>Onboarded</th><th>Active</th><th>Persona</th><th>Frequency</th><th>Emails Sent</th><th>Trial Ends</th></tr></thead>
+    <tbody>${rows}</tbody></table>
+    </body></html>`);
 });
 
 // Magic link request
@@ -176,9 +225,10 @@ app.post('/api/onboard', requireAuth, async (req, res) => {
 
 // Save settings
 app.post('/api/settings', requireAuth, (req, res) => {
-  const { persona, persona_custom, context_text, topic_source, send_hour, timezone, active } = req.body;
+  const { persona, persona_custom, context_text, topic_source, send_hour, send_days, timezone, active } = req.body;
   db.saveSettings(req.user.id, { persona, persona_custom, context_text, topic_source,
-    send_hour: parseInt(send_hour) || 12, timezone, active: active ? 1 : 0 });
+    send_hour: parseInt(send_hour) || 8, send_days: send_days || 'daily',
+    timezone, active: active !== undefined ? (active ? 1 : 0) : undefined });
   res.json({ ok: true });
 });
 
@@ -273,7 +323,7 @@ async function sendEmailForUser(userId, email) {
   const customTopics = db.getCustomTopics(userId);
   const { topic, total } = pickTopic(settings, customTopics.length > 0 ? customTopics : null);
 
-  // Get source text — pass concept as hint for smarter PDF window selection
+  // Get source text — fall back to internet (null uploadedText) if no files available
   let uploadedText = null;
   if (settings.topic_source !== 'internet') {
     const uploads = db.getUploads(userId);
@@ -288,13 +338,19 @@ async function sendEmailForUser(userId, email) {
       const { extractTextFromFile } = require('./engine');
       uploadedText = await extractTextFromFile(topic.sourceFile);
     }
+    // If still no text, fall through with uploadedText = null (engine uses internet search context)
+    if (!uploadedText) {
+      console.log(`[BriefStack] No source text for user ${userId} — using internet-search mode`);
+    }
   }
 
   const { subject, html: bodyHtml } = await generateEmailContent(topic, settings, uploadedText);
   const imageDataUri = await generateImage(topic, subject);
 
   const date = new Date().toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric', year: 'numeric' });
-  const fullHtml = buildFullHtml(subject, bodyHtml, topic, date, imageDataUri);
+  // Get a session token for the unsubscribe link
+  const sessionToken = db.getDb().prepare('SELECT token FROM magic_links WHERE user_id = ? ORDER BY id DESC LIMIT 1').get(userId);
+  const fullHtml = buildFullHtml(subject, bodyHtml, topic, date, imageDataUri, sessionToken ? sessionToken.token : null);
 
   const mailer = getMailer();
   await mailer.sendMail({
@@ -312,9 +368,11 @@ async function sendEmailForUser(userId, email) {
 
 // --- Per-user cron: fires every hour, sends to users whose send_hour matches UTC hour ---
 cron.schedule('0 * * * *', async () => {
-  const utcHour = new Date().getUTCHours();
-  const users = db.getActiveUsersForHour(utcHour);
-  console.log(`[Cron] UTC hour ${utcHour} - ${users.length} user(s) to send`);
+  const now = new Date();
+  const utcHour = now.getUTCHours();
+  const utcDow = now.getUTCDay();
+  const users = db.getActiveUsersForHour(utcHour, utcDow);
+  console.log(`[Cron] UTC hour ${utcHour} dow ${utcDow} - ${users.length} user(s) to send`);
   for (const u of users) {
     try {
       await sendEmailForUser(u.id, u.email);

@@ -3,13 +3,24 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>BriefStack - Your Daily Study Newsletter</title>
+  <title>BriefStack — Your Daily Brief, Written for You</title>
   <style>
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
+    :root {
+      --purple: #4f46e5;
+      --purple-light: #6366f1;
+      --purple-bg: #eef2ff;
+      --text: #111827;
+      --sub: #6b7280;
+      --border: #e5e7eb;
+      --bg: #ffffff;
+      --bg2: #f9fafb;
+    }
+
     body {
-      background: #0a0a10;
-      color: white;
+      background: var(--bg);
+      color: var(--text);
       font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
       min-height: 100vh;
     }
@@ -19,120 +30,267 @@
       display: flex;
       justify-content: space-between;
       align-items: center;
-      padding: 20px 40px;
-      border-bottom: 1px solid rgba(255,255,255,0.06);
+      padding: 16px 40px;
+      border-bottom: 1px solid var(--border);
+      position: sticky; top: 0;
+      background: white;
+      z-index: 50;
     }
-    .logo { font-size: 18px; font-weight: 800; letter-spacing: 0.15em; color: #7c6af7; text-transform: uppercase; }
-    .nav-cta { background: #7c6af7; color: white; font-weight: 700; font-size: 14px; padding: 9px 22px; border-radius: 10px; border: none; cursor: pointer; text-decoration: none; }
+    .logo { font-size: 17px; font-weight: 900; letter-spacing: 0.12em; color: var(--purple); text-transform: uppercase; }
+    .nav-links { display: flex; gap: 24px; align-items: center; }
+    .nav-link { font-size: 14px; color: var(--sub); text-decoration: none; font-weight: 500; }
+    .nav-link:hover { color: var(--text); }
+    .nav-cta { background: var(--purple); color: white; font-weight: 700; font-size: 14px; padding: 9px 20px; border-radius: 8px; border: none; cursor: pointer; text-decoration: none; transition: opacity 0.15s; }
+    .nav-cta:hover { opacity: 0.9; }
 
     /* Hero */
     .hero {
-      max-width: 760px;
-      margin: 100px auto 60px;
+      max-width: 780px;
+      margin: 72px auto 64px;
       text-align: center;
       padding: 0 24px;
     }
     .hero-badge {
-      display: inline-block;
-      background: rgba(124,106,247,0.15);
-      color: #a89af9;
+      display: inline-flex; align-items: center; gap: 6px;
+      background: var(--purple-bg);
+      color: var(--purple);
       font-size: 12px;
       font-weight: 700;
-      letter-spacing: 0.12em;
+      letter-spacing: 0.08em;
       text-transform: uppercase;
-      padding: 6px 16px;
+      padding: 5px 14px;
       border-radius: 20px;
-      border: 1px solid rgba(124,106,247,0.3);
+      border: 1px solid rgba(79,70,229,0.2);
       margin-bottom: 28px;
     }
     h1 {
-      font-size: clamp(36px, 6vw, 64px);
+      font-size: clamp(36px, 5.5vw, 58px);
       font-weight: 900;
       line-height: 1.1;
       margin-bottom: 20px;
-      background: linear-gradient(135deg, #fff 0%, #a89af9 100%);
-      -webkit-background-clip: text;
-      -webkit-text-fill-color: transparent;
-      background-clip: text;
+      color: var(--text);
+      letter-spacing: -0.02em;
     }
+    h1 span { color: var(--purple); }
     .hero-sub {
       font-size: 18px;
-      color: rgba(255,255,255,0.55);
+      color: var(--sub);
       line-height: 1.7;
-      max-width: 560px;
+      max-width: 540px;
       margin: 0 auto 40px;
     }
 
     /* Email form */
-    .email-form {
-      display: flex;
-      gap: 10px;
-      max-width: 460px;
-      margin: 0 auto 16px;
-    }
+    .email-form { display: flex; gap: 8px; max-width: 440px; margin: 0 auto 14px; }
     .email-form input {
       flex: 1;
-      background: rgba(255,255,255,0.07);
-      border: 1px solid rgba(255,255,255,0.12);
-      border-radius: 12px;
-      padding: 14px 18px;
+      background: white;
+      border: 1.5px solid var(--border);
+      border-radius: 10px;
+      padding: 13px 16px;
       font-size: 15px;
-      color: white;
+      color: var(--text);
       outline: none;
+      transition: border-color 0.15s;
     }
-    .email-form input::placeholder { color: rgba(255,255,255,0.3); }
-    .email-form input:focus { border-color: #7c6af7; }
+    .email-form input:focus { border-color: var(--purple); }
+    .email-form input::placeholder { color: #9ca3af; }
     .email-form button {
-      background: #7c6af7;
+      background: var(--purple);
       color: white;
       font-weight: 700;
       font-size: 15px;
-      padding: 14px 24px;
-      border-radius: 12px;
+      padding: 13px 22px;
+      border-radius: 10px;
       border: none;
       cursor: pointer;
       white-space: nowrap;
-      transition: opacity 0.2s;
+      transition: opacity 0.15s;
     }
     .email-form button:hover { opacity: 0.88; }
-    .form-note { font-size: 12px; color: rgba(255,255,255,0.3); text-align: center; }
-    .success-msg { display: none; background: rgba(34,197,94,0.1); border: 1px solid rgba(34,197,94,0.3); color: #86efac; padding: 14px 20px; border-radius: 12px; text-align: center; font-size: 14px; max-width: 460px; margin: 0 auto; }
-
-    /* Personas */
-    .section { max-width: 900px; margin: 80px auto; padding: 0 24px; }
-    .section-label { font-size: 11px; font-weight: 700; letter-spacing: 0.14em; text-transform: uppercase; color: #7c6af7; margin-bottom: 20px; }
-    .section h2 { font-size: 28px; font-weight: 800; margin-bottom: 32px; }
-
-    .persona-grid {
-      display: grid;
-      grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
-      gap: 16px;
+    .form-note { font-size: 12px; color: #9ca3af; text-align: center; }
+    .success-msg {
+      display: none;
+      background: #f0fdf4; border: 1px solid #86efac;
+      color: #166534; padding: 14px 20px; border-radius: 10px;
+      text-align: center; font-size: 14px; max-width: 440px; margin: 0 auto;
     }
-    .persona-card {
-      background: rgba(255,255,255,0.04);
-      border: 1px solid rgba(255,255,255,0.08);
-      border-radius: 16px;
-      padding: 22px 24px;
-      transition: border-color 0.2s;
+
+    /* Social proof bar */
+    .social-proof {
+      display: flex; justify-content: center; align-items: center;
+      gap: 24px; flex-wrap: wrap;
+      margin: 20px auto 0;
+      padding-top: 20px;
+      border-top: 1px solid var(--border);
+      max-width: 520px;
     }
-    .persona-card:hover { border-color: rgba(124,106,247,0.5); }
-    .persona-name { font-size: 15px; font-weight: 800; margin-bottom: 6px; }
-    .persona-voice { font-size: 13px; color: rgba(255,255,255,0.5); margin-bottom: 8px; }
-    .persona-tag { font-size: 11px; color: #7c6af7; font-weight: 600; }
+    .proof-item { display: flex; align-items: center; gap: 6px; font-size: 13px; color: var(--sub); }
+    .proof-icon { font-size: 15px; }
+
+    /* Section layout */
+    .section { max-width: 960px; margin: 80px auto; padding: 0 24px; }
+    .section-label { font-size: 12px; font-weight: 700; letter-spacing: 0.12em; text-transform: uppercase; color: var(--purple); margin-bottom: 12px; }
+    .section h2 { font-size: clamp(24px, 3.5vw, 34px); font-weight: 800; margin-bottom: 12px; letter-spacing: -0.01em; }
+    .section-sub-text { font-size: 16px; color: var(--sub); max-width: 560px; margin-bottom: 36px; line-height: 1.6; }
 
     /* How it works */
-    .steps { display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 20px; }
-    .step { background: rgba(255,255,255,0.03); border-radius: 16px; padding: 24px; }
-    .step-num { font-size: 28px; font-weight: 900; color: #7c6af7; margin-bottom: 12px; }
+    .steps { display: grid; grid-template-columns: repeat(auto-fill, minmax(210px, 1fr)); gap: 20px; }
+    .step {
+      background: var(--bg2);
+      border: 1px solid var(--border);
+      border-radius: 14px; padding: 24px;
+    }
+    .step-num { font-size: 11px; font-weight: 700; color: var(--purple); letter-spacing: 0.1em; text-transform: uppercase; margin-bottom: 10px; }
     .step-title { font-size: 15px; font-weight: 700; margin-bottom: 6px; }
-    .step-desc { font-size: 13px; color: rgba(255,255,255,0.5); line-height: 1.6; }
+    .step-desc { font-size: 13px; color: var(--sub); line-height: 1.6; }
+
+    /* Context / "About you" callout */
+    .context-callout {
+      background: linear-gradient(135deg, var(--purple-bg) 0%, #e0e7ff 100%);
+      border: 1.5px solid rgba(79,70,229,0.2);
+      border-radius: 18px;
+      padding: 36px 40px;
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 32px;
+      align-items: center;
+    }
+    .context-callout h3 { font-size: 22px; font-weight: 800; margin-bottom: 10px; }
+    .context-callout p { font-size: 15px; color: #374151; line-height: 1.7; }
+    .context-example {
+      background: white;
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 20px;
+      font-size: 13px;
+      color: var(--sub);
+      line-height: 1.7;
+    }
+    .context-example strong { color: var(--text); display: block; margin-bottom: 6px; font-size: 12px; text-transform: uppercase; letter-spacing: 0.06em; color: var(--purple); }
+
+    /* Personas */
+    .persona-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 12px; }
+    .persona-card {
+      background: var(--bg2);
+      border: 1.5px solid var(--border);
+      border-radius: 12px;
+      padding: 18px 20px;
+      transition: border-color 0.15s, box-shadow 0.15s;
+    }
+    .persona-card:hover { border-color: var(--purple-light); box-shadow: 0 2px 12px rgba(79,70,229,0.08); }
+    .persona-name { font-size: 14px; font-weight: 800; margin-bottom: 4px; }
+    .persona-voice { font-size: 12px; color: var(--sub); margin-bottom: 6px; line-height: 1.5; }
+    .persona-tag { font-size: 11px; color: var(--purple); font-weight: 600; }
+
+    /* Email preview card */
+    .email-preview {
+      background: white;
+      border: 1px solid var(--border);
+      border-radius: 18px;
+      overflow: hidden;
+      box-shadow: 0 8px 40px rgba(0,0,0,0.08);
+      max-width: 640px;
+      margin: 0 auto;
+    }
+    .email-preview-header {
+      background: #111827;
+      padding: 16px 24px;
+      display: flex; align-items: center; gap: 10px;
+    }
+    .email-preview-dot { width: 10px; height: 10px; border-radius: 50%; }
+    .email-preview-body { padding: 28px 32px; }
+    .email-preview-subject { font-size: 18px; font-weight: 800; margin-bottom: 6px; color: #111827; }
+    .email-preview-from { font-size: 12px; color: #9ca3af; margin-bottom: 20px; }
+    .email-preview-content { font-size: 14px; color: #374151; line-height: 1.8; }
+    .email-preview-section { margin-bottom: 16px; }
+    .email-preview-section-title { font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.1em; color: var(--purple); margin-bottom: 4px; }
+    .email-preview-tag { display: inline-block; background: var(--purple-bg); color: var(--purple); font-size: 11px; font-weight: 700; padding: 3px 10px; border-radius: 20px; margin-bottom: 10px; }
+
+    /* Pricing */
+    .pricing-card {
+      max-width: 420px;
+      margin: 0 auto;
+      background: white;
+      border: 2px solid var(--purple);
+      border-radius: 20px;
+      padding: 40px;
+      text-align: center;
+      box-shadow: 0 4px 24px rgba(79,70,229,0.1);
+    }
+    .price-amount { font-size: 56px; font-weight: 900; color: var(--purple); line-height: 1; }
+    .price-period { font-size: 15px; color: var(--sub); margin-bottom: 28px; }
+    .price-features { text-align: left; list-style: none; margin-bottom: 32px; display: flex; flex-direction: column; gap: 12px; }
+    .price-features li { display: flex; align-items: center; gap: 10px; font-size: 14px; color: #374151; }
+    .price-check { color: var(--purple); font-size: 16px; flex-shrink: 0; }
+    .price-cta {
+      display: block; width: 100%;
+      background: var(--purple); color: white;
+      font-weight: 800; font-size: 16px;
+      padding: 15px; border-radius: 12px;
+      text-decoration: none; transition: opacity 0.15s;
+      border: none; cursor: pointer;
+    }
+    .price-cta:hover { opacity: 0.9; }
+    .price-note { font-size: 12px; color: #9ca3af; margin-top: 12px; }
+    .price-trial-badge { display: inline-block; background: #dcfce7; color: #166534; font-size: 12px; font-weight: 700; padding: 4px 12px; border-radius: 20px; margin-bottom: 16px; }
+
+    /* FAQ */
+    .faq-list { display: flex; flex-direction: column; gap: 12px; max-width: 680px; }
+    .faq-item {
+      background: var(--bg2);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 20px 24px;
+    }
+    .faq-q { font-size: 15px; font-weight: 700; margin-bottom: 8px; }
+    .faq-a { font-size: 14px; color: var(--sub); line-height: 1.7; }
+
+    /* CTA bottom */
+    .cta-bottom {
+      background: linear-gradient(135deg, #4f46e5 0%, #6366f1 100%);
+      border-radius: 20px;
+      padding: 56px 40px;
+      text-align: center;
+      color: white;
+      margin: 0 24px;
+    }
+    .cta-bottom h2 { font-size: 30px; font-weight: 900; margin-bottom: 12px; }
+    .cta-bottom p { font-size: 16px; opacity: 0.8; margin-bottom: 32px; max-width: 480px; margin-left: auto; margin-right: auto; }
+    .cta-bottom-form { display: flex; gap: 8px; max-width: 400px; margin: 0 auto; }
+    .cta-bottom-form input {
+      flex: 1; background: rgba(255,255,255,0.15);
+      border: 1.5px solid rgba(255,255,255,0.3);
+      border-radius: 10px; padding: 13px 16px;
+      font-size: 15px; color: white; outline: none;
+    }
+    .cta-bottom-form input::placeholder { color: rgba(255,255,255,0.5); }
+    .cta-bottom-form button {
+      background: white; color: var(--purple);
+      font-weight: 800; font-size: 15px;
+      padding: 13px 22px; border-radius: 10px;
+      border: none; cursor: pointer; white-space: nowrap;
+      transition: opacity 0.15s;
+    }
 
     footer {
       text-align: center;
-      padding: 40px 24px;
-      border-top: 1px solid rgba(255,255,255,0.06);
-      color: rgba(255,255,255,0.3);
+      padding: 32px 24px 48px;
+      border-top: 1px solid var(--border);
+      color: #9ca3af;
       font-size: 12px;
+      margin-top: 80px;
+    }
+    footer a { color: #6b7280; text-decoration: none; }
+    footer a:hover { color: var(--purple); }
+    footer .footer-links { display: flex; justify-content: center; gap: 20px; margin-bottom: 8px; }
+
+    @media (max-width: 640px) {
+      nav { padding: 14px 20px; }
+      .nav-links { display: none; }
+      .context-callout { grid-template-columns: 1fr; }
+      .cta-bottom-form { flex-direction: column; }
+      .cta-bottom { margin: 0 16px; padding: 40px 24px; }
     }
   </style>
 </head>
@@ -140,190 +298,247 @@
 
 <nav>
   <div class="logo">BriefStack</div>
-  <a href="#get-started" class="nav-cta">Get Started Free</a>
+  <div class="nav-links">
+    <a href="#how-it-works" class="nav-link">How it works</a>
+    <a href="#voices" class="nav-link">Voices</a>
+    <a href="#pricing" class="nav-link">Pricing</a>
+    <a href="#faq" class="nav-link">FAQ</a>
+  </div>
+  <a href="#get-started" class="nav-cta">Start Free Trial</a>
 </nav>
 
+<!-- Hero -->
 <div class="hero" id="get-started">
-  <div class="hero-badge">Daily newsletter - powered by Claude AI</div>
-  <h1>Turn what you study into a brief you actually read</h1>
+  <div class="hero-badge">✦ AI-powered daily newsletter</div>
+  <h1>The morning brief that's actually <span>about you</span></h1>
   <p class="hero-sub">
-    Upload your course materials or let BriefStack search the internet. Every morning, one concept, one real-world hook, written in the voice of your favorite thinker.
+    Heavy concepts, written in a voice you love, connected to what's happening today — and what it means for your work. Every morning. In your inbox.
   </p>
 
   <form class="email-form" id="loginForm">
     <input type="email" id="emailInput" placeholder="your@email.com" required>
-    <button type="submit">Get Started</button>
+    <button type="submit">Start Free Trial</button>
   </form>
-  <p class="form-note">No password. We'll send you a magic link.</p>
+  <p class="form-note">7-day free trial &nbsp;·&nbsp; No credit card required &nbsp;·&nbsp; Cancel anytime</p>
   <div class="success-msg" id="successMsg">
-    Check your inbox - your login link is on its way.
+    ✓ Check your inbox — your login link is on its way.
+  </div>
+
+  <div class="social-proof">
+    <div class="proof-item"><span class="proof-icon">📚</span> Upload your own materials</div>
+    <div class="proof-item"><span class="proof-icon">🎙️</span> 11 persona voices</div>
+    <div class="proof-item"><span class="proof-icon">⚡</span> Arrives every morning</div>
   </div>
 </div>
 
+<!-- Email Preview -->
 <div class="section">
-  <p class="section-label">Choose your voice</p>
-  <h2>Pick a persona that matches how you think</h2>
-  <div class="persona-grid">
-    <div class="persona-card">
-      <div class="persona-name">Scott Galloway</div>
-      <div class="persona-voice">Brutal, data-driven, provocative</div>
-      <div class="persona-tag">MBA / Business Strategy</div>
+  <div class="section-label">See what you get</div>
+  <h2>A real example brief</h2>
+  <p class="section-sub-text">This is what a BriefStack brief looks like — written by Scott Galloway, connecting Porter's Five Forces to a real news story.</p>
+
+  <div class="email-preview">
+    <div class="email-preview-header">
+      <div class="email-preview-dot" style="background:#ff5f57"></div>
+      <div class="email-preview-dot" style="background:#ffbd2e"></div>
+      <div class="email-preview-dot" style="background:#28c840"></div>
+      <span style="font-size:12px;color:rgba(255,255,255,0.5);margin-left:8px;">BriefStack Daily</span>
     </div>
-    <div class="persona-card">
-      <div class="persona-name">Paul Graham</div>
-      <div class="persona-voice">Contrarian, first-principles, startup-focused</div>
-      <div class="persona-tag">Founders / Engineers</div>
-    </div>
-    <div class="persona-card">
-      <div class="persona-name">McKinsey Analyst</div>
-      <div class="persona-voice">Structured, frameworks, sharp</div>
-      <div class="persona-tag">Consultants / Corp Strategy</div>
-    </div>
-    <div class="persona-card">
-      <div class="persona-name">Naval Ravikant</div>
-      <div class="persona-voice">Philosophical, wealth and leverage focused</div>
-      <div class="persona-tag">Entrepreneurs / Investors</div>
-    </div>
-    <div class="persona-card">
-      <div class="persona-name">The Economist</div>
-      <div class="persona-voice">Dry wit, global lens, precise</div>
-      <div class="persona-tag">Policy / Economics</div>
-    </div>
-    <div class="persona-card">
-      <div class="persona-name">Alex Hormozi</div>
-      <div class="persona-voice">No-BS business, profit-obsessed, blunt math</div>
-      <div class="persona-tag">Operators / Entrepreneurs</div>
-    </div>
-    <div class="persona-card">
-      <div class="persona-name">Seth Godin</div>
-      <div class="persona-voice">Marketing philosophy, deceptively simple</div>
-      <div class="persona-tag">Marketers / Brand Builders</div>
-    </div>
-    <div class="persona-card">
-      <div class="persona-name">Howard Marks</div>
-      <div class="persona-voice">Investor memo, second-level thinking</div>
-      <div class="persona-tag">Finance / Investing</div>
-    </div>
-    <div class="persona-card">
-      <div class="persona-name">Tim Ferriss</div>
-      <div class="persona-voice">Practical, optimization, 80/20 everything</div>
-      <div class="persona-tag">Productivity / Self-improvement</div>
-    </div>
-    <div class="persona-card">
-      <div class="persona-name">Kara Swisher</div>
-      <div class="persona-voice">Tech critic, accountability, sharp edges</div>
-      <div class="persona-tag">Tech / Founders</div>
-    </div>
-    <div class="persona-card" style="border-color:rgba(124,106,247,0.3);">
-      <div class="persona-name">Custom</div>
-      <div class="persona-voice">Write your own system prompt</div>
-      <div class="persona-tag" style="color:#a89af9;">Power users</div>
+    <div class="email-preview-body">
+      <div class="email-preview-tag">Monday · Competitive Strategy</div>
+      <div class="email-preview-subject">Disney's Streaming Moat Is Crumbling — Here's the Framework That Explains Why</div>
+      <div class="email-preview-from">From BriefStack · Written in Scott Galloway's voice</div>
+      <div class="email-preview-content">
+        <div class="email-preview-section">
+          <div class="email-preview-section-title">Real World Hook</div>
+          Disney+ lost 1.3 million subscribers last quarter while Netflix added 9.3 million. Disney's stock is down 18% in 12 months. This is not a content problem. It's a structural problem — and Porter's Five Forces explains exactly why.
+        </div>
+        <div class="email-preview-section">
+          <div class="email-preview-section-title">The Concept</div>
+          Porter's Five Forces: the framework that tells you whether an industry is worth being in, and whether your position in it is defensible.
+        </div>
+        <div class="email-preview-section">
+          <div class="email-preview-section-title">So What For You</div>
+          You're at ShinyBox selling industrial VR training to O&G companies. Your Five Forces look surprisingly different from Disney's — low threat of substitutes, very few competitors at your quality level, and buyers who have high switching costs once deployed. That's a defensible position. The question is whether you're pricing like it is.
+        </div>
+      </div>
     </div>
   </div>
 </div>
 
+<!-- About You Section -->
 <div class="section">
-  <p class="section-label">How it works</p>
+  <div class="section-label">The difference</div>
+  <h2>It knows who you are</h2>
+  <div class="context-callout">
+    <div>
+      <h3>You tell it about yourself once.</h3>
+      <p>Every brief ends with a "So What for You" section — applying today's concept directly to your job, your deals, your situation. Not generic. Not vague. Specific to you.</p>
+      <p style="margin-top:14px;font-size:14px;color:#6b7280;">Competitors give you the same newsletter as everyone else. BriefStack writes <em>yours</em>.</p>
+    </div>
+    <div class="context-example">
+      <strong>Example context you'd write</strong>
+      "I'm a BD Lead at an industrial VR training startup in Houston. We're transitioning from services to SaaS, selling to O&G companies. My main challenge is shortening enterprise sales cycles and proving ROI to procurement teams."
+      <div style="margin-top:14px;padding-top:14px;border-top:1px solid #e5e7eb;">
+        <strong style="color:#059669;">What BriefStack does with this</strong>
+        Every brief's final section connects that day's concept — whether it's CLV, game theory, or pricing strategy — directly to your enterprise sales challenge. Every day.
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- How it works -->
+<div class="section" id="how-it-works">
+  <div class="section-label">How it works</div>
   <h2>Set up in 3 minutes</h2>
+  <p class="section-sub-text">No complicated setup. Three steps and your first brief arrives.</p>
   <div class="steps">
     <div class="step">
-      <div class="step-num">1</div>
+      <div class="step-num">Step 1</div>
       <div class="step-title">Enter your email</div>
-      <div class="step-desc">No password needed. We send you a magic link.</div>
+      <div class="step-desc">No password. We send you a magic link. One click and you're in.</div>
     </div>
     <div class="step">
-      <div class="step-num">2</div>
-      <div class="step-title">Tell us about yourself</div>
-      <div class="step-desc">A short context paragraph so every "So What" section speaks directly to your situation.</div>
+      <div class="step-num">Step 2</div>
+      <div class="step-title">Tell us about you</div>
+      <div class="step-desc">2–3 sentences about your job and goals. This is what makes the "So What" section actually useful.</div>
     </div>
     <div class="step">
-      <div class="step-num">3</div>
-      <div class="step-title">Upload materials or go internet-only</div>
-      <div class="step-desc">Drop in PDFs, slides, or notes. Or skip it and let BriefStack search the internet for topics.</div>
+      <div class="step-num">Step 3</div>
+      <div class="step-title">Pick your voice</div>
+      <div class="step-desc">Choose who writes your brief — Galloway, Graham, Hormozi, Marks, and 7 others. Change it anytime.</div>
     </div>
     <div class="step">
-      <div class="step-num">4</div>
-      <div class="step-title">Pick your persona and send time</div>
-      <div class="step-desc">Choose your voice and the time each morning. Done - briefs arrive daily.</div>
+      <div class="step-num">Step 4</div>
+      <div class="step-title">Done</div>
+      <div class="step-desc">Briefs arrive daily at your chosen time. Upload your own PDFs to add source material, or use internet-only mode.</div>
     </div>
   </div>
 </div>
 
-<div class="section" style="text-align:center;">
-  <p class="section-label">Pricing</p>
-  <h2>Free for 7 days. Then $9/month.</h2>
-  <p style="font-size:16px;color:rgba(255,255,255,0.5);max-width:480px;margin:0 auto 36px;line-height:1.7;">
-    All features included. One plan, no upsells. Cancel anytime from your dashboard.
-  </p>
-  <div style="background:rgba(124,106,247,0.07);border:1px solid rgba(124,106,247,0.2);border-radius:20px;padding:36px 40px;max-width:400px;margin:0 auto;">
-    <div style="font-size:52px;font-weight:900;color:#a89af9;line-height:1;">$9</div>
-    <div style="font-size:14px;color:rgba(255,255,255,0.35);margin-bottom:28px;margin-top:6px;">per month, after 7-day free trial</div>
-    <div style="display:flex;flex-direction:column;gap:12px;text-align:left;margin-bottom:32px;">
-      <div style="display:flex;gap:12px;align-items:center;">
-        <span style="color:#7c6af7;font-size:16px;">✓</span>
-        <span style="font-size:14px;color:rgba(255,255,255,0.75);">Daily AI-written briefs in your inbox</span>
-      </div>
-      <div style="display:flex;gap:12px;align-items:center;">
-        <span style="color:#7c6af7;font-size:16px;">✓</span>
-        <span style="font-size:14px;color:rgba(255,255,255,0.75);">11 persona voices to choose from</span>
-      </div>
-      <div style="display:flex;gap:12px;align-items:center;">
-        <span style="color:#7c6af7;font-size:16px;">✓</span>
-        <span style="font-size:14px;color:rgba(255,255,255,0.75);">Upload your own PDFs and study materials</span>
-      </div>
-      <div style="display:flex;gap:12px;align-items:center;">
-        <span style="color:#7c6af7;font-size:16px;">✓</span>
-        <span style="font-size:14px;color:rgba(255,255,255,0.75);">Cinematic AI-generated header images</span>
-      </div>
-      <div style="display:flex;gap:12px;align-items:center;">
-        <span style="color:#7c6af7;font-size:16px;">✓</span>
-        <span style="font-size:14px;color:rgba(255,255,255,0.75);">Adjust anything anytime from dashboard</span>
-      </div>
-    </div>
-    <a href="#get-started" style="display:block;text-align:center;background:#7c6af7;color:white;font-weight:800;font-size:16px;padding:15px;border-radius:12px;text-decoration:none;transition:opacity 0.2s;" onmouseover="this.style.opacity=0.88" onmouseout="this.style.opacity=1">Start Free Trial</a>
-    <p style="font-size:12px;color:rgba(255,255,255,0.2);margin-top:12px;">No credit card required to start</p>
+<!-- Persona gallery -->
+<div class="section" id="voices">
+  <div class="section-label">Choose your voice</div>
+  <h2>11 voices. One that's yours.</h2>
+  <p class="section-sub-text">Your brief is written in the voice of someone you actually want to read. Change it anytime from your dashboard.</p>
+  <div class="persona-grid">
+    <div class="persona-card"><div class="persona-name">Scott Galloway</div><div class="persona-voice">Brutal, data-driven, provocative. Short sentences. Specific numbers.</div><div class="persona-tag">MBA · Business Strategy</div></div>
+    <div class="persona-card"><div class="persona-name">Paul Graham</div><div class="persona-voice">Contrarian, first-principles, startup-focused. Counterintuitive insights.</div><div class="persona-tag">Founders · Engineers</div></div>
+    <div class="persona-card"><div class="persona-name">Alex Hormozi</div><div class="persona-voice">No-BS business, profit-obsessed. "Here's the math." Blunt and direct.</div><div class="persona-tag">Operators · Entrepreneurs</div></div>
+    <div class="persona-card"><div class="persona-name">Howard Marks</div><div class="persona-voice">Investor memo, second-level thinking, patient and contrarian.</div><div class="persona-tag">Finance · Investing</div></div>
+    <div class="persona-card"><div class="persona-name">McKinsey Partner</div><div class="persona-voice">Structured, framework-driven, precise. Data-backed every claim.</div><div class="persona-tag">Consultants · Corp Strategy</div></div>
+    <div class="persona-card"><div class="persona-name">Naval Ravikant</div><div class="persona-voice">Philosophical, wealth-focused, aphoristic. Connect concepts to leverage.</div><div class="persona-tag">Entrepreneurs · Investors</div></div>
+    <div class="persona-card"><div class="persona-name">Seth Godin</div><div class="persona-voice">Marketing philosophy, deceptively simple insights, find your tribe.</div><div class="persona-tag">Marketers · Brand Builders</div></div>
+    <div class="persona-card"><div class="persona-name">Tim Ferriss</div><div class="persona-voice">Practical, optimization-obsessed. Find the 20% that drives 80%.</div><div class="persona-tag">Productivity · Self-improvement</div></div>
+    <div class="persona-card"><div class="persona-name">The Economist</div><div class="persona-voice">Dry wit, global lens, precise language. Historical parallels.</div><div class="persona-tag">Policy · Economics</div></div>
+    <div class="persona-card"><div class="persona-name">Kara Swisher</div><div class="persona-voice">Tech critic, accountability-first. Name names. Connect the dots.</div><div class="persona-tag">Tech · Founders</div></div>
+    <div class="persona-card" style="border-color:rgba(79,70,229,0.3);background:#eef2ff;"><div class="persona-name">Custom</div><div class="persona-voice">Write your own system prompt. Be anyone you want.</div><div class="persona-tag" style="color:#4f46e5;">Power users</div></div>
   </div>
 </div>
 
-<div class="section">
-  <p class="section-label">Questions</p>
+<!-- Pricing -->
+<div class="section" id="pricing">
+  <div class="section-label">Pricing</div>
+  <h2>Simple pricing. No surprises.</h2>
+  <p class="section-sub-text">One plan, all features included. Start free, pay only if you love it.</p>
+
+  <div class="pricing-card">
+    <div class="price-trial-badge">7-day free trial</div>
+    <div class="price-amount">$9</div>
+    <div class="price-period">per month after trial &nbsp;·&nbsp; cancel anytime</div>
+    <ul class="price-features">
+      <li><span class="price-check">✓</span> Daily AI-written briefs, 7 days/week</li>
+      <li><span class="price-check">✓</span> 11 persona voices to choose from</li>
+      <li><span class="price-check">✓</span> Personalized "So What for You" section</li>
+      <li><span class="price-check">✓</span> Upload your own PDFs and study materials</li>
+      <li><span class="price-check">✓</span> Cinematic AI-generated header image</li>
+      <li><span class="price-check">✓</span> Choose frequency: daily, weekdays, or weekly</li>
+      <li><span class="price-check">✓</span> Full dashboard to adjust anything, anytime</li>
+      <li><span class="price-check">✓</span> Email history — last 30 briefs saved</li>
+    </ul>
+    <a href="#get-started" class="price-cta">Start Free Trial</a>
+    <p class="price-note">No credit card required to start</p>
+  </div>
+</div>
+
+<!-- FAQ -->
+<div class="section" id="faq">
+  <div class="section-label">FAQ</div>
   <h2>Good things to know</h2>
-  <div style="display:flex;flex-direction:column;gap:12px;max-width:640px;">
-    <div style="background:rgba(255,255,255,0.03);border:1px solid rgba(255,255,255,0.06);border-radius:14px;padding:20px 24px;">
-      <div style="font-size:15px;font-weight:700;margin-bottom:6px;">Do I need my own study materials?</div>
-      <div style="font-size:14px;color:rgba(255,255,255,0.5);line-height:1.6;">No. BriefStack searches the web for content on any topic you choose. Upload your own PDFs, slides, or notes to personalize it further - or skip that and go internet-only.</div>
+  <div class="faq-list">
+    <div class="faq-item">
+      <div class="faq-q">Do I need my own study materials?</div>
+      <div class="faq-a">No. BriefStack can search the internet for content on any topic. Upload your own PDFs, slides, or notes to make briefs even more personalized — or skip it entirely and use internet-only mode.</div>
     </div>
-    <div style="background:rgba(255,255,255,0.03);border:1px solid rgba(255,255,255,0.06);border-radius:14px;padding:20px 24px;">
-      <div style="font-size:15px;font-weight:700;margin-bottom:6px;">What if I want to change my voice or topics?</div>
-      <div style="font-size:14px;color:rgba(255,255,255,0.5);line-height:1.6;">Change anything in your dashboard at any time. Switch from Galloway to Howard Marks to Kara Swisher mid-month. Your next email uses the new settings immediately.</div>
+    <div class="faq-item">
+      <div class="faq-q">You are not the product.</div>
+      <div class="faq-a">BriefStack charges a subscription fee. We don't run ads, we don't sell your data, and we don't use your uploaded files to train AI models. Your materials and context are yours. We process them only to generate your brief, and nothing else. Compare that to "free" tools that monetize your attention and data — here you pay a fair price and the product serves you, not advertisers.</div>
     </div>
-    <div style="background:rgba(255,255,255,0.03);border:1px solid rgba(255,255,255,0.06);border-radius:14px;padding:20px 24px;">
-      <div style="font-size:15px;font-weight:700;margin-bottom:6px;">Is my data safe?</div>
-      <div style="font-size:14px;color:rgba(255,255,255,0.5);line-height:1.6;">Your uploaded files are yours. We process them to generate your briefs and don't share or sell your data to anyone.</div>
+    <div class="faq-item">
+      <div class="faq-q">How do I know the content is accurate?</div>
+      <div class="faq-a">BriefStack uses Claude (Anthropic's AI) to write briefs grounded in real news and your source materials. Every brief includes a "Real World Hook" with a named company or event you can verify. That said, AI content can contain errors — treat each brief as a starting point for thinking, not a source of ground truth. We include an AI disclaimer in every email. If a brief has a factual issue, you can skip it and the next one won't repeat the topic.</div>
     </div>
-    <div style="background:rgba(255,255,255,0.03);border:1px solid rgba(255,255,255,0.06);border-radius:14px;padding:20px 24px;">
-      <div style="font-size:15px;font-weight:700;margin-bottom:6px;">Can I pause or cancel?</div>
-      <div style="font-size:14px;color:rgba(255,255,255,0.5);line-height:1.6;">Yes, anytime. Toggle emails on/off in your dashboard. Cancel your subscription in one click - no emails, no forms, no friction.</div>
+    <div class="faq-item">
+      <div class="faq-q">What if I want to change my voice or topics?</div>
+      <div class="faq-a">Change anything in your dashboard, anytime. Switch from Galloway to Howard Marks to Kara Swisher mid-week. Your next brief uses the new settings immediately.</div>
     </div>
+    <div class="faq-item">
+      <div class="faq-q">Can I control how often I receive briefs?</div>
+      <div class="faq-a">Yes. You can choose daily (7 days/week), weekdays only (Mon–Fri), Mon/Wed/Fri, or weekly (Mondays). Set your preferred send time and timezone in the dashboard.</div>
+    </div>
+    <div class="faq-item">
+      <div class="faq-q">Can I pause or cancel?</div>
+      <div class="faq-a">Yes, anytime. Toggle emails on/off instantly in your dashboard. Cancel your subscription in one click — no emails, no forms, no friction. Your data stays accessible until the end of your billing period.</div>
+    </div>
+    <div class="faq-item">
+      <div class="faq-q">Is my data safe?</div>
+      <div class="faq-a">Your uploaded files are processed to generate your brief and are not shared with anyone. We use Anthropic's API (Claude) and Google's API (Gemini) for generation — your topic context is sent to these services per their standard privacy terms. We store your email, settings, and brief history. Full details in our <a href="/privacy" style="color:var(--purple)">Privacy Policy</a>.</div>
+    </div>
+  </div>
+</div>
+
+<!-- Bottom CTA -->
+<div style="max-width:960px;margin:0 auto 80px;padding:0 24px;">
+  <div class="cta-bottom">
+    <h2>Start getting smarter every morning</h2>
+    <p>7-day free trial. Your first brief arrives within 2 minutes of signing up.</p>
+    <div class="cta-bottom-form" id="bottomForm">
+      <input type="email" id="bottomEmail" placeholder="your@email.com">
+      <button onclick="submitBottom()">Start Free Trial</button>
+    </div>
+    <p style="font-size:12px;opacity:0.6;margin-top:12px;" id="bottomNote">No credit card required</p>
   </div>
 </div>
 
 <footer>
-  BriefStack - powered by Claude AI and your own study materials
-  &nbsp;&middot;&nbsp;
-  <a href="/terms" style="color:inherit;text-decoration:none;">Terms</a>
-  &nbsp;&middot;&nbsp;
-  <a href="/privacy" style="color:inherit;text-decoration:none;">Privacy</a>
+  <div class="footer-links">
+    <a href="/terms">Terms of Service</a>
+    <a href="/privacy">Privacy Policy</a>
+    <a href="mailto:hello@briefstack.app">Contact</a>
+  </div>
+  BriefStack — AI-generated content for educational purposes. <a href="/terms">Disclaimer</a>
 </footer>
 
 <script>
+  // Hero form
   document.getElementById('loginForm').addEventListener('submit', async (e) => {
     e.preventDefault();
-    const email = document.getElementById('emailInput').value;
-    const btn = e.target.querySelector('button');
+    await submitEmail(document.getElementById('emailInput').value, e.target.querySelector('button'), 'successMsg', 'form-note-el');
+  });
+
+  async function submitBottom() {
+    const email = document.getElementById('bottomEmail').value;
+    if (!email || !email.includes('@')) { alert('Please enter a valid email.'); return; }
+    const btn = document.querySelector('#bottomForm button');
+    await submitEmail(email, btn, null, null);
+    document.getElementById('bottomForm').innerHTML = '<p style="color:white;font-size:15px;font-weight:600;">✓ Check your inbox for your login link!</p>';
+    document.getElementById('bottomNote').style.display = 'none';
+  }
+
+  async function submitEmail(email, btn, successId, noteId) {
+    const orig = btn.textContent;
     btn.textContent = 'Sending...';
     btn.disabled = true;
-
     try {
       const res = await fetch('/api/auth/request', {
         method: 'POST',
@@ -332,19 +547,30 @@
       });
       const data = await res.json();
       if (data.ok) {
-        document.getElementById('loginForm').style.display = 'none';
-        document.querySelector('.form-note').style.display = 'none';
-        document.getElementById('successMsg').style.display = 'block';
+        if (successId) {
+          document.getElementById('loginForm').style.display = 'none';
+          const noteEl = document.querySelector('.form-note');
+          if (noteEl) noteEl.style.display = 'none';
+          document.getElementById(successId).style.display = 'block';
+        }
       } else {
-        btn.textContent = 'Get Started';
+        btn.textContent = orig;
         btn.disabled = false;
-        alert(data.error || 'Something went wrong');
+        alert(data.error || 'Something went wrong. Please try again.');
       }
     } catch (err) {
-      btn.textContent = 'Get Started';
+      btn.textContent = orig;
       btn.disabled = false;
-      alert('Network error');
+      alert('Network error. Please try again.');
     }
+  }
+
+  // Smooth scroll for nav links
+  document.querySelectorAll('a[href^="#"]').forEach(a => {
+    a.addEventListener('click', e => {
+      const target = document.querySelector(a.getAttribute('href'));
+      if (target) { e.preventDefault(); target.scrollIntoView({ behavior: 'smooth', block: 'start' }); }
+    });
   });
 </script>
 </body>

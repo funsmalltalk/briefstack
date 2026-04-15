@@ -23,6 +23,9 @@ function migrate(db) {
   // Migrate existing DB: add new columns if they don't exist yet
   try { db.exec(`ALTER TABLE users ADD COLUMN onboarded INTEGER DEFAULT 0`) } catch(e) {}
   try { db.exec(`ALTER TABLE users ADD COLUMN trial_ends TEXT`) } catch(e) {}
+  try { db.exec(`ALTER TABLE settings ADD COLUMN send_days TEXT DEFAULT 'daily'`) } catch(e) {}
+  // Fix: change default topic_source to internet for existing rows without uploads
+  try { db.exec(`UPDATE settings SET topic_source = 'internet' WHERE topic_source = 'files' AND user_id NOT IN (SELECT DISTINCT user_id FROM uploads)`) } catch(e) {}
 
   db.exec(`
     CREATE TABLE IF NOT EXISTS users (
@@ -48,8 +51,9 @@ function migrate(db) {
       persona TEXT DEFAULT 'galloway',
       persona_custom TEXT,
       context_text TEXT DEFAULT '',
-      topic_source TEXT DEFAULT 'files',
-      send_hour INTEGER DEFAULT 7,
+      topic_source TEXT DEFAULT 'internet',
+      send_hour INTEGER DEFAULT 8,
+      send_days TEXT DEFAULT 'daily',
       timezone TEXT DEFAULT 'America/Chicago',
       active INTEGER DEFAULT 1,
       topic_index INTEGER DEFAULT 0,
@@ -134,6 +138,11 @@ function getMagicLink(token) {
   return getDb().prepare('SELECT * FROM magic_links WHERE token = ? AND used = 0').get(token);
 }
 
+// For session validation — find token regardless of used/expiry status
+function getMagicLinkByToken(token) {
+  return getDb().prepare('SELECT * FROM magic_links WHERE token = ?').get(token);
+}
+
 function consumeMagicLink(token) {
   getDb().prepare('UPDATE magic_links SET used = 1 WHERE token = ?').run(token);
 }
@@ -151,7 +160,7 @@ function getSettings(userId) {
 }
 
 function saveSettings(userId, updates) {
-  const allowed = ['persona', 'persona_custom', 'context_text', 'topic_source', 'send_hour', 'timezone', 'active'];
+  const allowed = ['persona', 'persona_custom', 'context_text', 'topic_source', 'send_hour', 'send_days', 'timezone', 'active'];
   const fields = Object.keys(updates).filter(k => allowed.includes(k) && updates[k] !== undefined && updates[k] !== null);
   if (!fields.length) return;
   const set = fields.map(f => `${f} = ?`).join(', ');
@@ -221,19 +230,30 @@ function getSentEmailHtml(emailId, userId) {
 
 // --- Active users (for cron) ---
 
-function getActiveUsersForHour(utcHour) {
-  return getDb().prepare(`
+function getActiveUsersForHour(utcHour, utcDow) {
+  // utcDow: 0=Sun,1=Mon,...,6=Sat
+  const rows = getDb().prepare(`
     SELECT u.id, u.email, s.*
     FROM users u
     JOIN settings s ON s.user_id = u.id
     WHERE s.active = 1 AND s.send_hour = ?
   `).all(utcHour);
+
+  // Filter by send_days
+  return rows.filter(u => {
+    const days = u.send_days || 'daily';
+    if (days === 'daily') return true;
+    if (days === 'weekdays') return utcDow >= 1 && utcDow <= 5;
+    if (days === 'mwf') return [1, 3, 5].includes(utcDow);
+    if (days === 'weekly') return utcDow === 1; // Monday only
+    return true;
+  });
 }
 
 module.exports = {
   getDb,
   findOrCreateUser, getUserByEmail, getUserById, updateLastLogin, setOnboarded, setTrialEnds,
-  createMagicLink, getMagicLink, consumeMagicLink,
+  createMagicLink, getMagicLink, getMagicLinkByToken, consumeMagicLink,
   getSettings, saveSettings, incrementTopicIndex,
   saveUpload, getUploads, getUploadText, deleteUpload,
   getCustomTopics, addCustomTopic, deleteCustomTopic,
