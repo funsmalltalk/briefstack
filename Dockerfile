@@ -22,7 +22,6 @@ COPY . .
 # Run from web dir
 WORKDIR /app/web
 
-ENV PORT=3001
 ENV NODE_ENV=production
 
 EXPOSE 3001
