@@ -34,18 +34,29 @@ function getClient() {
 
 // Pick a topic for a user based on their settings and topic_index
 function pickTopic(settings, userTopics) {
-  const topics = (userTopics && userTopics.length > 0)
-    ? userTopics.map(t => ({
-        course: t.course,
-        concept: t.concept,
-        searchHint: t.search_hint || t.concept,
-        shinyboxAngle: t.context_angle || '',
-        sourceFile: null,
-      }))
-    : defaultTopics;
-
-  const idx = (settings.topic_index || 0) % topics.length;
-  return { topic: topics[idx], total: topics.length };
+  if (userTopics && userTopics.length > 0) {
+    const topics = userTopics.map(t => ({
+      course: t.course,
+      concept: t.concept,
+      searchHint: t.search_hint || t.concept,
+      shinyboxAngle: t.context_angle || '',
+      sourceFile: null,
+    }));
+    const idx = (settings.topic_index || 0) % topics.length;
+    return { topic: topics[idx], total: topics.length };
+  }
+  // No custom topics: generate a brief tailored to the user's context
+  return {
+    topic: {
+      course: 'Daily Brief',
+      concept: 'Freeform',
+      searchHint: settings.context_text || 'business and professional growth',
+      shinyboxAngle: '',
+      sourceFile: null,
+      freeform: true,
+    },
+    total: 1,
+  };
 }
 
 // Find the most relevant 3000-char window in a long text based on keyword overlap
@@ -108,13 +119,14 @@ async function generateEmailContent(topic, settings, uploadedText = null) {
     ? (settings.persona_custom || PERSONAS.galloway)
     : PERSONAS[personaKey] || PERSONAS.galloway;
 
+  const topicBlock = topic.freeform
+    ? `Find one real-world business story, professional skill, or industry trend from the past 30 days that is directly relevant to this reader's context. Choose a concept worth teaching, name the domain it belongs to (e.g. Marketing, Leadership, Finance, Operations), and write the full brief around it.`
+    : `Topic: ${topic.concept}\nCourse: ${topic.course}\n${topic.shinyboxAngle ? `Personal angle for the reader: ${topic.shinyboxAngle}` : ''}\nSearch hint: ${topic.searchHint || topic.concept}`;
+
   const prompt = `
 You are writing today's BriefStack daily newsletter email.
 
-Topic: ${topic.concept}
-Course: ${topic.course}
-${topic.shinyboxAngle ? `Personal angle for the reader: ${topic.shinyboxAngle}` : ''}
-Search hint: ${topic.searchHint || topic.concept}
+${topicBlock}
 ${sourceContext}
 
 About the reader: ${userContext}
@@ -136,6 +148,7 @@ STYLE RULES:
 - Short declarative sentences.
 - Specific numbers in every paragraph.
 - No academic language or filler phrases.
+- No fixed-width elements. Use max-width:100%;display:block on any images or tables.
 
 Return EXACTLY this format:
 
@@ -167,6 +180,7 @@ HTML_END
 }
 
 async function generateImage(topic, subject) {
+  if (!fs.existsSync(PY_SCRIPT)) return null; // script not available in this environment
   try {
     if (!fs.existsSync(IMAGES_DIR)) fs.mkdirSync(IMAGES_DIR, { recursive: true });
     const date = new Date().toISOString().split('T')[0];

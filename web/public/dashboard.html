@@ -462,11 +462,16 @@
 
     <div class="card" id="uploadCard">
       <div class="card-title">Upload Study Materials</div>
-      <div class="upload-area" id="uploadArea" onclick="document.getElementById('fileInput').click()">
+      <div class="upload-area" id="uploadArea">
         <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,0.3)" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
         <p>Drop PDFs or slides here, or click to browse</p>
       </div>
+      <div style="display:flex;gap:8px;margin-top:10px;">
+        <button class="btn btn-secondary btn-sm" onclick="document.getElementById('fileInput').click()">Browse Files</button>
+        <button class="btn btn-secondary btn-sm" onclick="document.getElementById('folderInput').click()">Browse Folder</button>
+      </div>
       <input type="file" id="fileInput" style="display:none" accept=".pdf,.pptx,.docx" multiple>
+      <input type="file" id="folderInput" style="display:none" webkitdirectory accept=".pdf,.pptx,.docx">
       <div class="file-list" id="fileList"></div>
     </div>
 
@@ -831,29 +836,29 @@ function setSourceTab(src, save = true) {
 }
 
 // File upload
-document.getElementById('fileInput').addEventListener('change', async (e) => {
-  for (const file of e.target.files) await uploadFile(file);
+async function uploadFiles(fileList) {
+  const files = Array.from(fileList).filter(f => /\.(pdf|pptx|docx)$/i.test(f.name));
+  if (!files.length) return;
+  toast(`Uploading ${files.length} file${files.length > 1 ? 's' : ''}...`);
+  const fd = new FormData();
+  for (const f of files) fd.append('files', f);
+  const res = await fetch('/api/upload', { method: 'POST', body: fd });
+  const data = await res.json();
+  if (data.ok) toast(`Uploaded ${data.files.length} file${data.files.length > 1 ? 's' : ''}`);
   loadData();
-});
+}
+
+document.getElementById('fileInput').addEventListener('change', (e) => { uploadFiles(e.target.files); e.target.value = ''; });
+document.getElementById('folderInput').addEventListener('change', (e) => { uploadFiles(e.target.files); e.target.value = ''; });
 
 const uploadArea = document.getElementById('uploadArea');
 uploadArea.addEventListener('dragover', (e) => { e.preventDefault(); uploadArea.classList.add('dragover'); });
 uploadArea.addEventListener('dragleave', () => uploadArea.classList.remove('dragover'));
-uploadArea.addEventListener('drop', async (e) => {
+uploadArea.addEventListener('drop', (e) => {
   e.preventDefault();
   uploadArea.classList.remove('dragover');
-  for (const file of e.dataTransfer.files) await uploadFile(file);
-  loadData();
+  uploadFiles(e.dataTransfer.files);
 });
-
-async function uploadFile(file) {
-  const fd = new FormData();
-  fd.append('file', file);
-  toast(`Uploading ${file.name}...`);
-  const res = await fetch('/api/upload', { method: 'POST', body: fd });
-  const data = await res.json();
-  if (data.ok) toast(`Uploaded: ${file.name} (${data.chars} chars extracted)`);
-}
 
 function renderFileList(uploads) {
   const el = document.getElementById('fileList');

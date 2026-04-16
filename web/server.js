@@ -259,16 +259,19 @@ app.post('/api/settings', requireAuth, (req, res) => {
   res.json({ ok: true });
 });
 
-// Upload PDF
-app.post('/api/upload', requireAuth, upload.single('file'), async (req, res) => {
-  if (!req.file) return res.status(400).json({ error: 'No file' });
-  let parsedText = null;
-  try {
-    parsedText = await extractTextFromBuffer(req.file.buffer, req.file.originalname);
-  } catch (e) {}
-  const filename = `${Date.now()}-${req.file.originalname.replace(/[^a-zA-Z0-9._-]/g, '_')}`;
-  db.saveUpload(req.user.id, filename, req.file.originalname, parsedText);
-  res.json({ ok: true, name: req.file.originalname, chars: parsedText ? parsedText.length : 0 });
+// Upload PDF(s) — accepts single file or multiple files (including folder contents)
+app.post('/api/upload', requireAuth, upload.array('files', 50), async (req, res) => {
+  const files = req.files && req.files.length ? req.files : (req.file ? [req.file] : []);
+  if (!files.length) return res.status(400).json({ error: 'No file' });
+  const results = [];
+  for (const f of files) {
+    let parsedText = null;
+    try { parsedText = await extractTextFromBuffer(f.buffer, f.originalname); } catch (e) {}
+    const filename = `${Date.now()}-${f.originalname.replace(/[^a-zA-Z0-9._-]/g, '_')}`;
+    db.saveUpload(req.user.id, filename, f.originalname, parsedText);
+    results.push({ name: f.originalname, chars: parsedText ? parsedText.length : 0 });
+  }
+  res.json({ ok: true, files: results });
 });
 
 // Delete upload

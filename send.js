@@ -16,9 +16,21 @@ function buildFullHtml(subject, bodyHtml, topic, date, imageDataUri = null, unsu
 
   return `<!DOCTYPE html>
 <html>
-<head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1"></head>
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <style>
+    @media(max-width:480px){
+      .bs-outer{padding:16px 10px !important;}
+      .bs-hero{padding:16px !important;}
+      .bs-hero h1{font-size:17px !important;}
+      .bs-body{padding:16px !important;}
+      .bs-cta{padding:16px 14px !important;}
+    }
+  </style>
+</head>
 <body style="margin:0;padding:0;background:#0f0f13;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;">
-<div style="max-width:620px;margin:0 auto;padding:28px 16px;">
+<div class="bs-outer" style="max-width:620px;margin:0 auto;padding:24px 14px;">
 
   <!-- Wordmark -->
   <div style="text-align:center;margin-bottom:16px;">
@@ -28,15 +40,15 @@ function buildFullHtml(subject, bodyHtml, topic, date, imageDataUri = null, unsu
   <!-- Hero card: image + header overlay -->
   <div style="border-radius:20px;overflow:hidden;margin-bottom:20px;position:relative;">
     ${imageBlock}
-    <div style="background:linear-gradient(135deg,#1a1a2e 0%,#16213e 100%);padding:28px 32px;">
+    <div class="bs-hero" style="background:linear-gradient(135deg,#1a1a2e 0%,#16213e 100%);padding:22px 24px;">
       <p style="color:rgba(255,255,255,0.45);font-size:11px;margin:0 0 6px;letter-spacing:0.1em;text-transform:uppercase;">${topic.course}</p>
-      <h1 style="color:white;font-size:21px;margin:0 0 8px;font-weight:800;line-height:1.3;">${subject}</h1>
+      <h1 style="color:white;font-size:20px;margin:0 0 8px;font-weight:800;line-height:1.3;">${subject}</h1>
       <p style="color:rgba(255,255,255,0.45);font-size:12px;margin:0;">${date}</p>
     </div>
   </div>
 
   <!-- Body -->
-  <div style="background:white;border-radius:16px;padding:28px 32px;margin-bottom:20px;box-shadow:0 2px 12px rgba(0,0,0,0.15);line-height:1.75;font-size:15px;color:#1e293b;">
+  <div class="bs-body" style="background:white;border-radius:16px;padding:22px 24px;margin-bottom:20px;box-shadow:0 2px 12px rgba(0,0,0,0.15);line-height:1.75;font-size:15px;color:#1e293b;word-break:break-word;overflow-wrap:break-word;">
     ${bodyHtml}
   </div>
 
@@ -48,9 +60,16 @@ function buildFullHtml(subject, bodyHtml, topic, date, imageDataUri = null, unsu
   </div>
 
   <!-- Dashboard CTA -->
-  <div style="background:#1e1b4b;border-radius:16px;padding:20px 28px;margin-bottom:20px;text-align:center;">
+  <div class="bs-cta" style="background:#1e1b4b;border-radius:16px;padding:20px 24px;margin-bottom:20px;text-align:center;">
     <p style="color:rgba(255,255,255,0.6);font-size:13px;margin:0 0 10px;">Change style, swap source material, or reorder topics</p>
-    <a href="${DASHBOARD_URL}/dashboard" style="display:inline-block;background:#7c6af7;color:white;font-weight:700;font-size:13px;padding:10px 24px;border-radius:10px;text-decoration:none;">Open BriefStack Dashboard</a>
+    <a href="${DASHBOARD_URL}/dashboard${unsubToken ? '?token=' + unsubToken : ''}" style="display:inline-block;background:#7c6af7;color:white;font-weight:700;font-size:13px;padding:10px 24px;border-radius:10px;text-decoration:none;">Open BriefStack Dashboard</a>
+  </div>
+
+  <!-- Tell a Friend -->
+  <div style="background:#0f0f13;border:1px solid rgba(124,106,247,0.25);border-radius:16px;padding:20px 24px;margin-bottom:20px;text-align:center;">
+    <p style="color:rgba(255,255,255,0.85);font-size:14px;font-weight:700;margin:0 0 4px;">Know someone who'd love this?</p>
+    <p style="color:rgba(255,255,255,0.45);font-size:12px;margin:0 0 14px;">One brief a day. Personalised to their world.</p>
+    <a href="${DASHBOARD_URL}" style="display:inline-block;background:transparent;color:#7c6af7;font-weight:700;font-size:13px;padding:9px 22px;border-radius:10px;text-decoration:none;border:1.5px solid #7c6af7;">Share BriefStack →</a>
   </div>
 
   <!-- Footer -->
