@@ -31,6 +31,7 @@ function migrate(db) {
   // Migrate existing DB: add new columns if they don't exist yet
   try { db.exec(`ALTER TABLE users ADD COLUMN onboarded INTEGER DEFAULT 0`) } catch(e) {}
   try { db.exec(`ALTER TABLE users ADD COLUMN trial_ends TEXT`) } catch(e) {}
+  try { db.exec(`ALTER TABLE users ADD COLUMN first_name TEXT DEFAULT ''`) } catch(e) {}
   try { db.exec(`ALTER TABLE settings ADD COLUMN send_days TEXT DEFAULT 'daily'`) } catch(e) {}
   try { db.exec(`ALTER TABLE settings ADD COLUMN send_hour_utc INTEGER`) } catch(e) {}
   // Fix: change default topic_source to internet for existing rows without uploads
@@ -135,6 +136,10 @@ function setOnboarded(userId) {
 
 function setTrialEnds(userId, isoDate) {
   getDb().prepare('UPDATE users SET trial_ends = ? WHERE id = ?').run(isoDate, userId);
+}
+
+function setFirstName(userId, name) {
+  getDb().prepare('UPDATE users SET first_name = ? WHERE id = ?').run(name || '', userId);
 }
 
 // --- Magic link helpers ---
@@ -265,7 +270,7 @@ function getActiveUsersForHour(utcHour, utcDow) {
 
 module.exports = {
   getDb,
-  findOrCreateUser, getUserByEmail, getUserById, updateLastLogin, setOnboarded, setTrialEnds,
+  findOrCreateUser, getUserByEmail, getUserById, updateLastLogin, setOnboarded, setTrialEnds, setFirstName,
   createMagicLink, getMagicLink, getMagicLinkByToken, consumeMagicLink,
   getSettings, saveSettings, incrementTopicIndex,
   saveUpload, getUploads, getUploadText, deleteUpload,

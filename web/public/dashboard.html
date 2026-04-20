@@ -247,9 +247,30 @@
     .topic-item-text { font-size: 13px; }
     .topic-item-course { font-size: 11px; color: rgba(255,255,255,0.4); margin-top: 2px; }
 
+    /* Mobile sidebar */
+    .mobile-bar {
+      display: none;
+      position: fixed; top: 0; left: 0; right: 0;
+      height: 52px; background: #0f0f18;
+      border-bottom: 1px solid rgba(255,255,255,0.06);
+      align-items: center; justify-content: space-between;
+      padding: 0 16px; z-index: 150;
+    }
+    .mobile-logo { font-size: 14px; font-weight: 900; color: #7c6af7; letter-spacing: 0.15em; text-transform: uppercase; }
+    .hamburger { background: none; border: none; color: white; cursor: pointer; padding: 4px; display: flex; flex-direction: column; gap: 5px; }
+    .hamburger span { display: block; width: 22px; height: 2px; background: white; border-radius: 2px; }
+    .sidebar-overlay { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.6); z-index: 160; }
+    .sidebar-overlay.open { display: block; }
+
     @media (max-width: 700px) {
-      .sidebar { display: none; }
-      .main { margin-left: 0; padding: 20px; }
+      .mobile-bar { display: flex; }
+      .sidebar {
+        transform: translateX(-240px);
+        transition: transform 0.25s ease;
+        z-index: 170;
+      }
+      .sidebar.open { transform: translateX(0); }
+      .main { margin-left: 0; padding: 72px 16px 24px; }
     }
 
     /* Onboarding modal */
@@ -322,7 +343,16 @@
 </head>
 <body>
 
-<aside class="sidebar">
+<!-- Mobile top bar -->
+<div class="mobile-bar">
+  <div class="mobile-logo">BriefStack</div>
+  <button class="hamburger" onclick="toggleSidebar()" aria-label="Menu">
+    <span></span><span></span><span></span>
+  </button>
+</div>
+<div class="sidebar-overlay" id="sidebarOverlay" onclick="toggleSidebar()"></div>
+
+<aside class="sidebar" id="sidebar">
   <div class="sidebar-logo">BriefStack</div>
   <a class="sidebar-link active" onclick="showTab('overview')">Overview</a>
   <a class="sidebar-link" onclick="showTab('persona')">Persona & Voice</a>
@@ -434,6 +464,8 @@
         <textarea id="personaCustom" placeholder="You are a stoic Roman general who applies ancient military strategy to modern business problems..."></textarea>
       </div>
 
+      <label>Your first name (used in email greetings)</label>
+      <input type="text" id="settingsFirstName" placeholder="Alex">
       <label>About you (the "So What" context)</label>
       <textarea id="contextText" placeholder="I'm a BD Lead at an industrial VR training startup in Houston, transitioning the company from services to SaaS. I work with O&G clients. My main challenge is..."></textarea>
       <p style="font-size:12px;color:rgba(255,255,255,0.3);margin-top:6px;">Every email ends with a 'So What for You' section. The more specific this context, the more useful that section will be.</p>
@@ -547,16 +579,19 @@
 <!-- Onboarding Modal -->
 <div class="onboard-overlay" id="onboardModal">
   <div class="onboard-card">
-    <div class="onboard-progress"><div class="onboard-progress-bar" id="onboardProgressBar" style="width:33%"></div></div>
+    <div class="onboard-progress"><div class="onboard-progress-bar" id="onboardProgressBar" style="width:25%"></div></div>
     <div class="onboard-header">
-      <div class="onboard-step-label" id="onboardStepLabel">Step 1 of 3</div>
+      <div class="onboard-step-label" id="onboardStepLabel">Step 1 of 4</div>
       <div style="font-size:16px;font-weight:900;color:#7c6af7;letter-spacing:0.12em;">BRIEFSTACK</div>
     </div>
 
-    <!-- Step 1: Context -->
+    <!-- Step 1: Name + Context -->
     <div class="onboard-body" id="onboard-step-1">
-      <h3>Tell me about you</h3>
-      <p>Every brief ends with a "So What for You" section. The more specific this is, the more useful it'll be.</p>
+      <h3>Let's get started</h3>
+      <p>A few quick details so your briefs feel personal.</p>
+      <label style="margin-top:0;">Your first name</label>
+      <input type="text" class="onboard-textarea" id="onboardName" placeholder="Alex" style="min-height:unset;padding:12px 14px;">
+      <label>Tell me about you</label>
       <textarea class="onboard-textarea" id="onboardContext" placeholder="I'm a BD Lead at a VR training startup in Houston working on enterprise SaaS deals. I'm doing an MBA and want to connect what I study to real deals I'm working on..."></textarea>
       <button class="onboard-btn-primary" onclick="onboardNext(2)">Continue →</button>
     </div>
@@ -570,8 +605,27 @@
       <button class="onboard-btn-back" onclick="onboardBack(1)">← Back</button>
     </div>
 
-    <!-- Step 3: Schedule -->
+    <!-- Step 3: Sources -->
     <div class="onboard-body" id="onboard-step-3" style="display:none;">
+      <h3>What's your source?</h3>
+      <p>Should each brief be based on your own materials, or live internet research?</p>
+      <div style="display:flex;flex-direction:column;gap:10px;margin-bottom:8px;">
+        <div class="onboard-persona-opt selected" id="srcOptInternet" onclick="selectOnboardSource('internet')">
+          <div class="onboard-persona-name">🌐 Internet Search</div>
+          <div class="onboard-persona-desc">BriefStack finds fresh articles on each topic. No uploads needed.</div>
+        </div>
+        <div class="onboard-persona-opt" id="srcOptFiles" onclick="selectOnboardSource('files')">
+          <div class="onboard-persona-name">📄 My Own Materials</div>
+          <div class="onboard-persona-desc">Upload your PDFs, slides, or notes — briefs are drawn from your content.</div>
+        </div>
+      </div>
+      <p style="font-size:12px;color:rgba(255,255,255,0.35);margin-top:4px;">You can upload files and change this later in Source Material settings.</p>
+      <button class="onboard-btn-primary" onclick="onboardNext(4)">Continue →</button>
+      <button class="onboard-btn-back" onclick="onboardBack(2)">← Back</button>
+    </div>
+
+    <!-- Step 4: Schedule -->
+    <div class="onboard-body" id="onboard-step-4" style="display:none;">
       <h3>When should it arrive?</h3>
       <p>How often and at what time each morning.</p>
       <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:16px;" id="onboardFreqGrid">
@@ -583,7 +637,7 @@
       <p style="font-size:12px;color:#a89af9;margin-bottom:12px;" id="onboardTzLabel">Detecting timezone...</p>
       <div class="time-grid" id="onboardTimeGrid"></div>
       <button class="onboard-btn-primary" id="onboardFinalBtn" onclick="completeOnboarding()">Send My First Brief Now →</button>
-      <button class="onboard-btn-back" onclick="onboardBack(2)">← Back</button>
+      <button class="onboard-btn-back" onclick="onboardBack(3)">← Back</button>
     </div>
   </div>
 </div>
@@ -622,15 +676,33 @@ const PERSONA_LIST = [
   { key: 'custom', name: 'Custom', desc: 'Write your own prompt' },
 ];
 
+// --- Mobile sidebar ---
+function toggleSidebar() {
+  document.getElementById('sidebar').classList.toggle('open');
+  document.getElementById('sidebarOverlay').classList.toggle('open');
+}
+
+// Close sidebar when a tab is selected on mobile
+const _origShowTab = window.showTab;
+
 // --- Onboarding ---
 let onboardPersona = 'galloway';
 let onboardHour = 13; // UTC default (8am CT)
 let onboardFreq = 'daily';
+let onboardSource = 'internet';
+const ONBOARD_STEPS = 4;
 
 function showOnboardingModal() {
   document.getElementById('onboardModal').classList.add('open');
   buildOnboardPersonaGrid();
   buildOnboardTimeGrid('onboardTimeGrid', 'onboardTzLabel', true);
+  // Reset to step 1
+  for (let i = 1; i <= ONBOARD_STEPS; i++) {
+    const el = document.getElementById(`onboard-step-${i}`);
+    if (el) el.style.display = i === 1 ? 'block' : 'none';
+  }
+  document.getElementById('onboardProgressBar').style.width = `${Math.round(1 / ONBOARD_STEPS * 100)}%`;
+  document.getElementById('onboardStepLabel').textContent = `Step 1 of ${ONBOARD_STEPS}`;
 }
 
 function buildOnboardPersonaGrid() {
@@ -685,15 +757,21 @@ function selectTime(el, utcH, gridId) {
 function onboardNext(step) {
   document.getElementById(`onboard-step-${step - 1}`).style.display = 'none';
   document.getElementById(`onboard-step-${step}`).style.display = 'block';
-  document.getElementById('onboardStepLabel').textContent = `Step ${step} of 3`;
-  document.getElementById('onboardProgressBar').style.width = `${Math.round(step / 3 * 100)}%`;
+  document.getElementById('onboardStepLabel').textContent = `Step ${step} of ${ONBOARD_STEPS}`;
+  document.getElementById('onboardProgressBar').style.width = `${Math.round(step / ONBOARD_STEPS * 100)}%`;
 }
 
 function onboardBack(step) {
   document.getElementById(`onboard-step-${step + 1}`).style.display = 'none';
   document.getElementById(`onboard-step-${step}`).style.display = 'block';
-  document.getElementById('onboardStepLabel').textContent = `Step ${step} of 3`;
-  document.getElementById('onboardProgressBar').style.width = `${Math.round(step / 3 * 100)}%`;
+  document.getElementById('onboardStepLabel').textContent = `Step ${step} of ${ONBOARD_STEPS}`;
+  document.getElementById('onboardProgressBar').style.width = `${Math.round(step / ONBOARD_STEPS * 100)}%`;
+}
+
+function selectOnboardSource(src) {
+  onboardSource = src;
+  document.getElementById('srcOptInternet').classList.toggle('selected', src === 'internet');
+  document.getElementById('srcOptFiles').classList.toggle('selected', src === 'files');
 }
 
 function selectOnboardFreq(el, freq) {
@@ -713,8 +791,10 @@ async function completeOnboarding() {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
+        first_name: document.getElementById('onboardName').value.trim(),
         context_text: document.getElementById('onboardContext').value,
         persona: onboardPersona,
+        topic_source: onboardSource,
         send_hour: onboardHour,
         send_days: onboardFreq,
         timezone: tz,
@@ -744,7 +824,7 @@ async function loadData() {
 function render() {
   const { user, settings, uploads, customTopics, history } = appData;
 
-  document.getElementById('userEmail').textContent = user.email;
+  document.getElementById('userEmail').textContent = user.first_name ? `${user.first_name} · ${user.email}` : user.email;
   document.getElementById('statusEmail').textContent = user.email;
   document.getElementById('statusPersona').textContent = capitalize(settings.persona || 'galloway');
   document.getElementById('statusTime').textContent = `${settings.send_hour}:00 UTC`;
@@ -758,6 +838,7 @@ function render() {
   document.getElementById('customPersonaSection').style.display = currentPersona === 'custom' ? 'block' : 'none';
   document.getElementById('personaCustom').value = settings.persona_custom || '';
   document.getElementById('contextText').value = settings.context_text || '';
+  document.getElementById('settingsFirstName').value = user.first_name || '';
 
   // Source tab
   currentSource = settings.topic_source || 'files';
@@ -798,6 +879,9 @@ function showTab(name) {
   document.querySelectorAll('.sidebar-link').forEach(el => el.classList.remove('active'));
   document.getElementById('tab-' + name).classList.add('active');
   event.currentTarget.classList.add('active');
+  // Close sidebar on mobile after selection
+  document.getElementById('sidebar').classList.remove('open');
+  document.getElementById('sidebarOverlay').classList.remove('open');
 }
 
 // Persona
@@ -812,6 +896,7 @@ document.querySelectorAll('.persona-opt').forEach(el => {
 
 async function savePersona() {
   const body = {
+    first_name: document.getElementById('settingsFirstName').value.trim(),
     persona: currentPersona,
     persona_custom: document.getElementById('personaCustom').value,
     context_text: document.getElementById('contextText').value,

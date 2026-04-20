@@ -9,7 +9,7 @@ const nodemailer = require('nodemailer');
 // DASHBOARD_URL is replaced at runtime if the web app is running
 const DASHBOARD_URL = process.env.BRIEFSTACK_URL || 'http://localhost:3001';
 
-function buildFullHtml(subject, bodyHtml, topic, date, imageDataUri = null, unsubToken = null) {
+function buildFullHtml(subject, bodyHtml, topic, date, imageDataUri = null, unsubToken = null, firstName = '') {
   const imageBlock = imageDataUri
     ? `<img src="${imageDataUri}" alt="${topic.concept}" style="width:100%;border-radius:16px 16px 0 0;display:block;max-height:280px;object-fit:cover;">`
     : '';
@@ -49,6 +49,7 @@ function buildFullHtml(subject, bodyHtml, topic, date, imageDataUri = null, unsu
 
   <!-- Body -->
   <div class="bs-body" style="background:white;border-radius:16px;padding:22px 24px;margin-bottom:20px;box-shadow:0 2px 12px rgba(0,0,0,0.15);line-height:1.75;font-size:15px;color:#1e293b;word-break:break-word;overflow-wrap:break-word;">
+    ${firstName ? `<p style="font-size:15px;color:#475569;margin:0 0 16px 0;font-weight:600;">Hi ${firstName},</p>` : ''}
     ${bodyHtml}
   </div>
 

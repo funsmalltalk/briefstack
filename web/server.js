@@ -244,7 +244,7 @@ app.get('/api/me', requireAuth, (req, res) => {
   const uploads = db.getUploads(req.user.id);
   const customTopics = db.getCustomTopics(req.user.id);
   const history = db.getSentEmails(req.user.id, 30);
-  res.json({ user: { email: user.email, onboarded: user.onboarded || 0, trial_ends: user.trial_ends }, settings, uploads, customTopics, history });
+  res.json({ user: { email: user.email, onboarded: user.onboarded || 0, trial_ends: user.trial_ends, first_name: user.first_name || '' }, settings, uploads, customTopics, history });
 });
 
 // Convert local hour to UTC hour using timezone string
@@ -262,15 +262,17 @@ function localHourToUtc(localHour, timezone) {
 
 // Complete onboarding: save settings, mark onboarded, fire first email
 app.post('/api/onboard', requireAuth, async (req, res) => {
-  const { context_text, persona, send_hour, timezone } = req.body;
+  const { context_text, persona, send_hour, timezone, first_name, topic_source } = req.body;
   const tz = timezone || 'America/Chicago';
   const localHour = parseInt(send_hour) || 8;
+  if (first_name) db.setFirstName(req.user.id, first_name.trim());
   db.saveSettings(req.user.id, {
     context_text: context_text || '',
     persona: persona || 'galloway',
     send_hour: localHour,
     send_hour_utc: localHourToUtc(localHour, tz),
     timezone: tz,
+    topic_source: topic_source || 'internet',
     active: 1,
   });
   db.setOnboarded(req.user.id);
@@ -281,7 +283,8 @@ app.post('/api/onboard', requireAuth, async (req, res) => {
 
 // Save settings
 app.post('/api/settings', requireAuth, (req, res) => {
-  const { persona, persona_custom, context_text, topic_source, send_hour, send_days, timezone, active } = req.body;
+  const { persona, persona_custom, context_text, topic_source, send_hour, send_days, timezone, active, first_name } = req.body;
+  if (first_name !== undefined) db.setFirstName(req.user.id, first_name.trim());
   const tz = timezone || 'America/Chicago';
   const localHour = parseInt(send_hour) || 8;
   db.saveSettings(req.user.id, { persona, persona_custom, context_text, topic_source,
@@ -410,9 +413,9 @@ async function sendEmailForUser(userId, email) {
   const imageDataUri = await generateImage(topic, subject);
 
   const date = new Date().toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric', year: 'numeric' });
-  // Get a session token for the unsubscribe link
   const sessionToken = db.getDb().prepare('SELECT token FROM magic_links WHERE user_id = ? ORDER BY id DESC LIMIT 1').get(userId);
-  const fullHtml = buildFullHtml(subject, bodyHtml, topic, date, imageDataUri, sessionToken ? sessionToken.token : null);
+  const userRecord = db.getUserById(userId);
+  const fullHtml = buildFullHtml(subject, bodyHtml, topic, date, imageDataUri, sessionToken ? sessionToken.token : null, userRecord.first_name || '');
 
   await sendBrevoEmail(email, `[BriefStack] ${subject}`, fullHtml);
 
