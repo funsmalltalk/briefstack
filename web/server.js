@@ -11,6 +11,8 @@ const crypto = require('crypto');
 const cron = require('node-cron');
 const multer = require('multer');
 
+const nodemailer = require('nodemailer');
+const { Resend } = require('resend');
 const db = require('./db');
 const { pickTopic, generateEmailContent, generateImage, extractTextFromBuffer, PERSONAS } = require('./engine');
 const { buildFullHtml } = require('../send');
@@ -62,23 +64,53 @@ function requireAuth(req, res, next) {
 const FROM_NAME = 'BriefStack';
 
 async function sendBrevoEmail(to, subject, html) {
-  const apiKey = process.env.BREVO_API_KEY;
-  const fromEmail = process.env.BREVO_FROM_EMAIL;
-  if (!apiKey) throw new Error('BREVO_API_KEY is not set');
-  if (!fromEmail) throw new Error('BREVO_FROM_EMAIL is not set');
-  const res = await fetch('https://api.brevo.com/v3/smtp/email', {
-    method: 'POST',
-    headers: { 'api-key': apiKey, 'Content-Type': 'application/json' },
-    body: JSON.stringify({
-      sender: { name: FROM_NAME, email: fromEmail },
-      to: [{ email: to }],
+  // Try Brevo first if credentials are available
+  const brevoKey = process.env.BREVO_API_KEY;
+  const brevoFrom = process.env.BREVO_FROM_EMAIL;
+  if (brevoKey && brevoFrom) {
+    const res = await fetch('https://api.brevo.com/v3/smtp/email', {
+      method: 'POST',
+      headers: { 'api-key': brevoKey, 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        sender: { name: FROM_NAME, email: brevoFrom },
+        to: [{ email: to }],
+        subject,
+        htmlContent: html,
+      }),
+    });
+    const data = await res.json();
+    if (!res.ok) throw new Error(`Brevo error: ${JSON.stringify(data)}`);
+    return data;
+  }
+
+  // Fall back to Resend
+  const resendKey = process.env.RESEND_API_KEY;
+  if (resendKey) {
+    const resend = new Resend(resendKey);
+    const fromEmail = process.env.RESEND_FROM_EMAIL || 'briefs@briefstack.app';
+    const { error } = await resend.emails.send({ from: `${FROM_NAME} <${fromEmail}>`, to, subject, html });
+    if (error) throw new Error(`Resend error: ${JSON.stringify(error)}`);
+    return { via: 'resend' };
+  }
+
+  // Fall back to Gmail via Nodemailer
+  const gmailUser = process.env.GMAIL_USER;
+  const gmailPass = process.env.GMAIL_APP_PASSWORD;
+  if (gmailUser && gmailPass) {
+    const transporter = nodemailer.createTransport({
+      service: 'gmail',
+      auth: { user: gmailUser, pass: gmailPass },
+    });
+    await transporter.sendMail({
+      from: `"${FROM_NAME}" <${gmailUser}>`,
+      to,
       subject,
-      htmlContent: html,
-    }),
-  });
-  const data = await res.json();
-  if (!res.ok) throw new Error(`Brevo error: ${JSON.stringify(data)}`);
-  return data;
+      html,
+    });
+    return { via: 'gmail' };
+  }
+
+  throw new Error('No email credentials configured. Set BREVO_API_KEY, RESEND_API_KEY, or GMAIL_USER + GMAIL_APP_PASSWORD.');
 }
 
 async function sendMagicLink(email, link) {

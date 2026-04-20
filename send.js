@@ -40,10 +40,10 @@ function buildFullHtml(subject, bodyHtml, topic, date, imageDataUri = null, unsu
   <!-- Hero card: image + header overlay -->
   <div style="border-radius:20px;overflow:hidden;margin-bottom:20px;position:relative;">
     ${imageBlock}
-    <div class="bs-hero" style="background:linear-gradient(135deg,#1a1a2e 0%,#16213e 100%);padding:22px 24px;">
-      <p style="color:rgba(255,255,255,0.45);font-size:11px;margin:0 0 6px;letter-spacing:0.1em;text-transform:uppercase;">${topic.course}</p>
-      <h1 style="color:white;font-size:20px;margin:0 0 8px;font-weight:800;line-height:1.3;">${subject}</h1>
-      <p style="color:rgba(255,255,255,0.45);font-size:12px;margin:0;">${date}</p>
+    <div class="bs-hero" style="background:linear-gradient(135deg,#1a1a2e 0%,#16213e 100%);padding:22px 24px;border-top:3px solid #7c6af7;">
+      <p style="color:#a89ff5;font-size:11px;margin:0 0 8px;letter-spacing:0.12em;text-transform:uppercase;font-weight:600;">${topic.course}</p>
+      <h1 style="color:#ffffff;font-size:20px;margin:0 0 10px;font-weight:800;line-height:1.3;text-shadow:0 1px 3px rgba(0,0,0,0.5);"><span style="color:#ffffff;">${subject}</span></h1>
+      <p style="color:#8b9ab5;font-size:12px;margin:0;">${date}</p>
     </div>
   </div>
 
